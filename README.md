@@ -12,6 +12,10 @@ It stores hashes, receipts, and state transitions on-chain while keeping model/t
 - 9/9 offline receipt verifier tests passing
 - **58/58 total tests passing**
 
+## Why this exists
+
+Most blockchain examples prove that a transaction happened. HXQ-Solana proves that an off-chain artifact followed a receipt-gated lifecycle: registered, validated, promoted, transferred, quarantined, and blocked when invalid. The artifact itself never goes on-chain — only its hashes, receipts, and state transitions do.
+
 ## What it proves
 
 - Register an off-chain artifact by content hash
