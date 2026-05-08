@@ -1,0 +1,18 @@
+{
+  "artifact_type": "scientific_compute",
+  "description": "Physics surrogate model output validated against ground truth dataset",
+  "content_identity": "model:mamba_716k:the_well:shallow_water:epoch_50:checkpoint",
+  "original_identity": "dataset:the_well:shallow_water:test_split:v1",
+  "receipts": {
+    "fidelity": "benchmark:mse_0.0023:beats_persistence_20_of_20:receipt_id=well_bench_20260415",
+    "behavioral": "replication:independent_worker_B:mse_0.0025:confirmed:receipt_id=replication_20260416",
+    "risk": "fraud_check:no_data_leakage:train_test_split_verified:receipt_id=audit_20260416"
+  },
+  "state_mapping": {
+    "Candidate": "Unvalidated model output",
+    "Active": "Benchmarked + replicated + audit-cleared",
+    "Quarantined": "Flagged for data leakage / fraud / failed replication"
+  },
+  "threshold": "Benchmark passes + independent replication + no fraud flags",
+  "notes": "Model weights and datasets stay off-chain. The chain records which benchmarks passed, who replicated, and whether audit cleared. Quarantine means someone flagged the result."
+}

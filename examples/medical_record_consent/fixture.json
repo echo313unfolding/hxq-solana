@@ -1,0 +1,18 @@
+{
+  "artifact_type": "medical_record",
+  "description": "Lab result from certified laboratory, patient consent tracked",
+  "content_identity": "lab:facility_CAP_98765:patient_anon_hash:CBC_panel:2026-05-03",
+  "original_identity": "order:provider_NPI_1234567890:CBC_panel:ordered_2026-05-01",
+  "receipts": {
+    "fidelity": "attestation:lab_director_CAP_98765:results_certified:2026-05-03",
+    "behavioral": "consent:patient_anon_hash:access_granted:provider_NPI_1234567890:purpose_treatment",
+    "risk": "compliance:hipaa_audit:access_logged:no_violations:2026-05-03"
+  },
+  "state_mapping": {
+    "Candidate": "Pending / awaiting provider attestation",
+    "Active": "Attested / consent active / transferable",
+    "Quarantined": "Consent revoked / access suspended"
+  },
+  "threshold": "Provider attested + patient consent active + HIPAA-compliant purpose",
+  "notes": "Patient data stays encrypted off-chain. Only hashes of attestations, consent events, and access receipts go on-chain. Quarantine means consent was revoked or a compliance violation was detected."
+}

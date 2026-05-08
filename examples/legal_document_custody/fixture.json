@@ -1,0 +1,18 @@
+{
+  "artifact_type": "legal_document",
+  "description": "Executed contract between Party A and Party B, filed with arbitration panel",
+  "content_identity": "contract:2026-05-01:partyA-partyB:executed:v3-final",
+  "original_identity": "contract:2026-04-15:partyA-partyB:draft:v1",
+  "receipts": {
+    "fidelity": "review:attorney_bar_12345:reviewed_2026-04-28:no_issues:hash_matches_v3",
+    "behavioral": "notarization:notary_commission_67890:notarized_2026-05-01:both_parties_present",
+    "risk": "filing:arbitration_panel_AAA:case_2026-0512:filed_2026-05-02"
+  },
+  "state_mapping": {
+    "Candidate": "Draft / under review",
+    "Active": "Executed / in force",
+    "Quarantined": "Disputed / superseded"
+  },
+  "threshold": "Both parties signed + notarized + attorney reviewed",
+  "notes": "The contract PDF stays off-chain. Only hashes and state transitions go on-chain. Quarantine means the document is disputed or has been superseded by a later version."
+}

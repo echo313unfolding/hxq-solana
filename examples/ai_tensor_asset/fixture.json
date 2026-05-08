@@ -1,0 +1,18 @@
+{
+  "artifact_type": "ai_tensor",
+  "description": "Compressed tensor from Qwen2.5-Coder-3B, layer 0 Q projection",
+  "content_identity": "hxq:qwen2.5-coder-3b:layer.0.self_attn.q_proj:af6:g128:cos0.9993",
+  "original_identity": "original:qwen2.5-coder-3b:layer.0.self_attn.q_proj:fp16",
+  "codec": 0,
+  "codec_name": "affine_6",
+  "group_size": 128,
+  "bits_per_weight": 6,
+  "cosine_min": 0.9993,
+  "ppl_delta_pct": 0.53,
+  "receipts": {
+    "fidelity": "fidelity:cos=0.9993:ppl_delta=+0.53%:receipt_id=af6_bench_20260508",
+    "behavioral": "behavioral:25/25_tasks:tied_q4km:receipt_id=tiny_behavior_eval_20260503",
+    "risk": "risk:sentinel_v01:clear:no_anomalies:receipt_id=sentinel_risk_20260508"
+  },
+  "notes": "All strings are hashed with SHA-256 before being submitted on-chain. The actual tensor file stays off-chain."
+}
