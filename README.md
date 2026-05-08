@@ -9,7 +9,8 @@ It stores hashes, receipts, and state transitions on-chain while keeping model/t
 - 16/16 base program tests passing
 - 9/9 AI tensor lifecycle demo passing
 - 24/24 domain fixture demos passing (legal, medical, scientific)
-- **49/49 total tests passing**
+- 9/9 offline receipt verifier tests passing
+- **58/58 total tests passing**
 
 ## What it proves
 
@@ -86,6 +87,31 @@ npx ts-mocha -p ./tsconfig.json -t 120000 tests/demo_domain_fixtures.ts
 
 Expected result: 24/24 tests pass across legal, medical, and scientific fixtures. Receipt written to `receipts/domain_fixture_demos_20260508.json`.
 
+### Verify receipts without running localnet
+
+The offline receipt verifier checks structural integrity of receipt JSON files without contacting any Solana RPC:
+
+```bash
+npx ts-node --project scripts/tsconfig.json scripts/verify_receipt.ts receipts/hxq_solana_lifecycle_demo_20260508.json
+npx ts-node --project scripts/tsconfig.json scripts/verify_receipt.ts receipts/domain_fixture_demos_20260508.json
+```
+
+Or via npm script:
+
+```bash
+npm run verify:receipt -- receipts/hxq_solana_lifecycle_demo_20260508.json
+```
+
+The verifier checks: required fields, program ID, tx signatures, 32-byte hex hashes, rejection error messages (`FidelityBelowThreshold`, `AssetNotActive`), pass/fail status, and final state consistency. Exit code 0 on pass, nonzero on fail.
+
+### Run verifier tests (9 tests)
+
+```bash
+npx ts-mocha -p ./tsconfig.json -t 10000 tests/test_verifier.ts
+```
+
+Tests include validation of both receipt types plus 7 corruption scenarios (wrong program ID, bad hashes, missing steps/domains, zeroed signatures, unknown type).
+
 ## On-chain account layout
 
 ```
@@ -128,7 +154,7 @@ EnDRZxswjvqKQhnPuMY6m6AFK3sxCKRX2dokXxAYPYrP
 ## What this IS
 
 - A localnet proof of receipt-gated state transitions for off-chain artifacts
-- A working Anchor program with 49 passing tests across 4 test suites
+- A working Anchor program with 58 passing tests across 5 test suites
 - A pattern proven to generalize beyond AI tensors to legal, medical, and scientific domains
 
 The legal, medical, and scientific examples are fixtures only. They demonstrate a provenance/state-machine pattern, not legal, medical, or regulatory compliance.
