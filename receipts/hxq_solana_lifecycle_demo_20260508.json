@@ -1,0 +1,115 @@
+{
+  "demo": "HXQ_SOLANA_LIFECYCLE_DEMO_V0",
+  "program_id": "EnDRZxswjvqKQhnPuMY6m6AFK3sxCKRX2dokXxAYPYrP",
+  "repo_path": "/home/voidstr3m33/hxq-solana",
+  "git_commit": "c978217e5373bfe0b9dce509cf4a9be76146eb0c",
+  "timestamp_start": "2026-05-08T20:45:06.699Z",
+  "timestamp_end": "2026-05-08T20:45:12.786Z",
+  "deterministic_content": "hxq:qwen2.5-coder-3b:layer.0.self_attn.q_proj:af6:g128:cos0.9993",
+  "content_hash": "166772093357c7b2dd5c4944ce6bca3ca60a8233698825db138cf5d405aeac2f",
+  "original_hash": "ea736f4b1daf857a9ec94f73efc80ac98591f602254251a2e3468553c64b524a",
+  "asset_pda": "AnGPFBf4yqjzPUgr1SDLewax6W7kRm5zwFEHQjJQJYSi",
+  "bad_asset_pda": "EPgw63RjqSxbxY5CPp1RoEm2bH6jH3Es8uxfP84hRsBm",
+  "quarantine_asset_pda": "5Cgqa46NpwYPzV1eok9YLRpmiJYRuTikyaTWVVCxD6oT",
+  "fidelity_receipt_hash": "47d20dc8736b39e065ed6d147e364519db18206c7735cc8b3d0d4b13d8b25950",
+  "behavioral_receipt_hash": "c693a5e5cc73be7d64bb47f5a8d41950c294359b0830b180e03ea8b983dfdf07",
+  "risk_attestation_hash": "3aea33fdcb064481f9cb879d584a5c9621b844efc44824be4562dd5a162e9545",
+  "new_owner_pubkey": "5mYRMDyx7oSWR8zeuk3VEyz9mV5adzJv6qTR6SEmEQRv",
+  "steps": [
+    {
+      "step": 1,
+      "name": "register_asset",
+      "tx": "62KX3cSzoVxqby7WvbxWkR3nurPa7Mbr5meCqHKN1HsEc5L3ZkHVXUtN89iJMNS3p8PiMeSFDoMdYdwczGDZdKma",
+      "error": null,
+      "status_before": null,
+      "status_after": "Candidate",
+      "pass": true
+    },
+    {
+      "step": 2,
+      "name": "submit_fidelity_receipt",
+      "tx": "2ek5eRtBy623RAk2HVGhicVNLwyTVbLhnkfuogLh6eyyyvxLPDy3WzxqReqN37SvZwL5NKqEqsf5RewMPsJPMKka",
+      "error": null,
+      "status_before": "Candidate",
+      "status_after": "Candidate",
+      "pass": true
+    },
+    {
+      "step": 3,
+      "name": "submit_behavioral_receipt",
+      "tx": "3wpMirauTvoFersScdHKwPGSSWk6TM56kNc9GDCxKNpCq5d2JyqVGygYuQ4FKBEPJQ46JKRGg6SM1orSVvrEcGbG",
+      "error": null,
+      "status_before": "Candidate",
+      "status_after": "Candidate",
+      "pass": true
+    },
+    {
+      "step": 4,
+      "name": "promote_asset_REJECTED",
+      "tx": null,
+      "error": "Error: Simulation failed. \nMessage: Transaction simulation failed: Error processing Instruction 0: custom program error: 0x1776. \nLogs: \n[\n  \"Program EnDRZxswjvqKQhnPuMY6m6AFK3sxCKRX2dokXxAYPYrP invoke [1]\",\n  \"Program log: Instruction: PromoteAsset\",\n  \"Program log: AnchorError thrown in programs/hxq-solana/src/lib.rs:148. Error Code: FidelityBelowThreshold. Error Number: 6006. Error Message: Cosine fidelity is below the 0.998 threshold.\",\n  \"Program EnDRZxswjvqKQhnPuMY6m6AFK3sxCKRX2dokXxAYPYrP consumed 3127 of 200000 compute units\",\n  \"Program EnDRZxswjvqKQhnPuMY6m6AFK3sxCKRX2dokXxAYPYrP failed: custom program error: 0x1776\"\n]. \nCatch the `SendTransactionError` and call `getLogs()` on it for full details.",
+      "status_before": "Candidate",
+      "status_after": "Candidate",
+      "pass": true
+    },
+    {
+      "step": 5,
+      "name": "promote_asset",
+      "tx": "2UDdrrcfj3vn2BdJEFxsLheRwZzpo5ReanqpKkFXLM4bwQXd832kG5vCcUb8pTSzq9CGWZBy1xYiKoHYqame5U7k",
+      "error": null,
+      "status_before": "Candidate",
+      "status_after": "Active",
+      "pass": true
+    },
+    {
+      "step": 6,
+      "name": "submit_risk_attestation",
+      "tx": "497zagdGqBW3NHFdcyTPCenGcjhsDkP5KVL4jGwRekHyRZmLCtDY9Pro7PQ5wLhuBS3jz2P5rUiWKUaK1KYSGdF7",
+      "error": null,
+      "status_before": "Active",
+      "status_after": "Active",
+      "pass": true
+    },
+    {
+      "step": 7,
+      "name": "transfer_asset",
+      "tx": "46oaGMiwh38GUuAtkM6hGg2Fbn3bVxmYvL8QTxAtbU5DHd9KqtDtMdzKV7ky2hcYNY5wVVMnr6TCVcNdhtKQTp9P",
+      "error": null,
+      "status_before": "Active",
+      "status_after": "Active",
+      "pass": true
+    },
+    {
+      "step": 8,
+      "name": "quarantine_asset",
+      "tx": "23sEBPqpxFBaNESXqSuKf5mwoiifjmavDnNdbjcdoaA7EMvdEqrNvXnyk5981fPrFEVLv1CYeWQZqLjWKp9Wb168",
+      "error": null,
+      "status_before": "Active",
+      "status_after": "Quarantined",
+      "pass": true
+    },
+    {
+      "step": 9,
+      "name": "transfer_quarantined_REJECTED",
+      "tx": null,
+      "error": "Error: Simulation failed. \nMessage: Transaction simulation failed: Error processing Instruction 0: custom program error: 0x1772. \nLogs: \n[\n  \"Program EnDRZxswjvqKQhnPuMY6m6AFK3sxCKRX2dokXxAYPYrP invoke [1]\",\n  \"Program log: Instruction: TransferAsset\",\n  \"Program log: AnchorError thrown in programs/hxq-solana/src/lib.rs:188. Error Code: AssetNotActive. Error Number: 6002. Error Message: Asset is not in Active status.\",\n  \"Program EnDRZxswjvqKQhnPuMY6m6AFK3sxCKRX2dokXxAYPYrP consumed 3355 of 200000 compute units\",\n  \"Program EnDRZxswjvqKQhnPuMY6m6AFK3sxCKRX2dokXxAYPYrP failed: custom program error: 0x1772\"\n]. \nCatch the `SendTransactionError` and call `getLogs()` on it for full details.",
+      "status_before": "Quarantined",
+      "status_after": "Quarantined",
+      "pass": true
+    }
+  ],
+  "final_state": {
+    "owner": "5mYRMDyx7oSWR8zeuk3VEyz9mV5adzJv6qTR6SEmEQRv",
+    "status": "Active",
+    "codec": 0,
+    "group_size": 128,
+    "bits_per_weight": 6,
+    "cosine_min": 0.9993000030517578,
+    "ppl_delta_pct": 0.5299999713897705,
+    "transfer_count": 1,
+    "has_fidelity": true,
+    "has_behavioral": true,
+    "has_risk": true
+  },
+  "all_pass": true
+}
