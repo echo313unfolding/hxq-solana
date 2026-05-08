@@ -4,6 +4,13 @@ HXQ-Solana is a localnet-verified Solana program for **receipt-gated provenance 
 
 It stores hashes, receipts, and state transitions on-chain while keeping model/tensor artifacts off-chain.
 
+## Current verification
+
+- 16/16 base program tests passing
+- 9/9 AI tensor lifecycle demo passing
+- 24/24 domain fixture demos passing (legal, medical, scientific)
+- **49/49 total tests passing**
+
 ## What it proves
 
 - Register an off-chain artifact by content hash
@@ -71,6 +78,14 @@ npx ts-mocha -p ./tsconfig.json -t 120000 tests/demo_lifecycle.ts
 
 Expected result: 9/9 lifecycle steps pass. Receipt written to `receipts/hxq_solana_lifecycle_demo_20260508.json`.
 
+### Run domain fixture demos (24 tests across 3 domains)
+
+```bash
+npx ts-mocha -p ./tsconfig.json -t 120000 tests/demo_domain_fixtures.ts
+```
+
+Expected result: 24/24 tests pass across legal, medical, and scientific fixtures. Receipt written to `receipts/domain_fixture_demos_20260508.json`.
+
 ## On-chain account layout
 
 ```
@@ -113,8 +128,10 @@ EnDRZxswjvqKQhnPuMY6m6AFK3sxCKRX2dokXxAYPYrP
 ## What this IS
 
 - A localnet proof of receipt-gated state transitions for off-chain artifacts
-- A working Anchor program with 16 base tests and a 9-step lifecycle demo
-- A pattern that generalizes beyond AI tensors to any high-value off-chain artifact
+- A working Anchor program with 49 passing tests across 4 test suites
+- A pattern proven to generalize beyond AI tensors to legal, medical, and scientific domains
+
+The legal, medical, and scientific examples are fixtures only. They demonstrate a provenance/state-machine pattern, not legal, medical, or regulatory compliance.
 
 ## The pattern
 
