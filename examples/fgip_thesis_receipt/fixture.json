@@ -1,0 +1,37 @@
+{
+  "description": "FGIP thesis receipt — tracks source-backed funding-chain evidence for investment theses. The graph remains off-chain; only hashes, metadata, and lifecycle state go on-chain.",
+  "artifact_type": "fgip_thesis_receipt",
+  "artifact_type_id": 6,
+  "content_identity": "fgip:thesis-defense-primes:20260509:conviction5:active",
+  "original_identity": "fgip:source_fact_edge_bundle:thesis-defense-primes:v1",
+  "receipts": {
+    "fidelity": "fidelity:source_fact_edge_validation:thesis-defense-primes:16_sources:18_facts:24_edges:all_tier0_verified",
+    "behavioral": "behavioral:funding_path_validation:thesis-defense-primes:ndaa_to_lmt_PASS:ukraine_supp_to_rtx_PASS:columbia_to_gd_to_hii_to_bwxt_PASS",
+    "risk": "risk:counter_thesis_checked:thesis-defense-primes:sequestration_likelihood_0.3:cost_overrun_likelihood_0.5:sentinel_nunn_mccurdy_flagged"
+  },
+  "threshold": "Promotion requires: (1) 3+ independent signal source types, (2) at least 1 Tier 0 government source, (3) counter-thesis articulated and assessed, (4) conviction score >= 60",
+  "state_mapping": {
+    "Candidate": "Thesis proposed, evidence collection in progress",
+    "Active": "Triangulation met, Tier 0 confirmed, counter-thesis assessed, conviction >= 3",
+    "Quarantined": "Disconfirming evidence found or counter-thesis validated"
+  },
+  "a_plus_b_equals_c": {
+    "A": "Congress authorizes defense funding (NDAA $895.2B, Ukraine supplemental $60.84B)",
+    "B": "DoD / USASpending / company records connect funding to primes and suppliers",
+    "C": "Defense-prime funding chain is active with multi-year replenishment cycle"
+  },
+  "funding_chain": [
+    "Congress authorizes NDAA ($895.2B)",
+    "DoD obligates funds via contracts",
+    "Prime contractors receive awards (LMT, RTX, NOC, GD, HII)",
+    "Subcontractors supply components (BWXT naval reactors, HWM forgings)",
+    "Commodity procurement (copper, steel, rare earths)"
+  ],
+  "evidence_tiers": {
+    "tier_0": "Government records: Congress.gov bill text, USASpending contracts, EDGAR 13F, Federal Register rulemakings",
+    "tier_1": "Professional sources: earnings calls, company press releases, Reuters/WSJ",
+    "tier_2": "Commentary: news articles, analyst opinions",
+    "tier_3": "Hypothesis: unverified observations (conviction boost = 0)"
+  },
+  "notes": "All thesis evidence (source articles, extracted facts, proposed edges, full receipt JSON) stays off-chain in the FGIP database. On-chain stores only: content_hash (receipt identity), original_hash (evidence bundle identity), metadata_hash (thesis metadata identity), receipt hashes (validation proofs), status (Candidate/Active/Quarantined), and timestamps. No private data, no personal capital info, no financial advice."
+}
