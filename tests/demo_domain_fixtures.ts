@@ -1,16 +1,13 @@
 /**
  * HXQ-Solana Domain Fixture Demos
  *
- * Proves the existing program works as a generic receipt-gated provenance
- * state machine for arbitrary off-chain artifacts — not just AI tensors.
+ * Proves the program works as a generic receipt-gated provenance
+ * state machine for arbitrary off-chain artifacts.
  *
- * Three domains tested using the UNCHANGED on-chain program:
- *   1. Legal document chain-of-custody
- *   2. Medical record consent
- *   3. Scientific compute receipt
- *
- * Each domain walks the full lifecycle:
- *   register → submit receipts → promote → risk attestation → transfer → quarantine → reject quarantined transfer
+ * Three domains tested:
+ *   1. Legal document chain-of-custody (artifact_type=1)
+ *   2. Medical record consent (artifact_type=2)
+ *   3. Scientific compute receipt (artifact_type=3)
  */
 
 const {
@@ -32,7 +29,13 @@ const PROGRAM_ID = new PublicKey("EnDRZxswjvqKQhnPuMY6m6AFK3sxCKRX2dokXxAYPYrP")
 const STATUS_CANDIDATE = 0;
 const STATUS_ACTIVE = 1;
 const STATUS_QUARANTINED = 2;
-const STATUS_NAMES: Record<number, string> = { 0: "Candidate", 1: "Active", 2: "Quarantined" };
+
+const ARTIFACT_TYPES: Record<string, number> = {
+  ai_tensor: 0,
+  legal_document: 1,
+  medical_record: 2,
+  scientific_compute: 3,
+};
 
 function ixDiscriminator(name: string): Buffer {
   return createHash("sha256").update(`global:${name}`).digest().slice(0, 8);
@@ -63,22 +66,16 @@ function encodeF32(val: number): Buffer {
   return buf;
 }
 
-function encodeU16(val: number): Buffer {
-  const buf = Buffer.alloc(2);
-  buf.writeUInt16LE(val, 0);
-  return buf;
-}
-
 function buildRegisterData(
   contentHash: Buffer, originalHash: Buffer,
-  codec: number, groupSize: number, bpw: number,
-  cosineMin: number, pplDelta: number
+  artifactType: number, threshold: number, metadataHash: Buffer
 ): Buffer {
   return Buffer.concat([
     IX_REGISTER,
     contentHash, originalHash,
-    Buffer.from([codec]), encodeU16(groupSize), Buffer.from([bpw]),
-    encodeF32(cosineMin), encodeF32(pplDelta),
+    Buffer.from([artifactType]),
+    encodeF32(threshold),
+    metadataHash,
   ]);
 }
 
@@ -87,11 +84,9 @@ function deserializeAsset(data: Buffer) {
   const owner = new PublicKey(data.slice(o, o + 32)); o += 32;
   const contentHash = data.slice(o, o + 32); o += 32;
   const originalHash = data.slice(o, o + 32); o += 32;
-  const codec = data[o]; o += 1;
-  const groupSize = data.readUInt16LE(o); o += 2;
-  const bitsPerWeight = data[o]; o += 1;
-  const cosineMin = data.readFloatLE(o); o += 4;
-  const pplDeltaPct = data.readFloatLE(o); o += 4;
+  const artifactType = data[o]; o += 1;
+  const threshold = data.readFloatLE(o); o += 4;
+  const metadataHash = data.slice(o, o + 32); o += 32;
   const status = data[o]; o += 1;
   const fidelityReceiptHash = data.slice(o, o + 32); o += 32;
   const behavioralReceiptHash = data.slice(o, o + 32); o += 32;
@@ -101,9 +96,9 @@ function deserializeAsset(data: Buffer) {
   const updatedAt = Number(data.readBigInt64LE(o)); o += 8;
   const bump = data[o];
   return {
-    owner, contentHash, originalHash, codec, groupSize, bitsPerWeight,
-    cosineMin, pplDeltaPct, status, fidelityReceiptHash, behavioralReceiptHash,
-    riskAttestationHash, transferCount, createdAt, updatedAt, bump,
+    owner, contentHash, originalHash, artifactType, threshold, metadataHash,
+    status, fidelityReceiptHash, behavioralReceiptHash, riskAttestationHash,
+    transferCount, createdAt, updatedAt, bump,
   };
 }
 
@@ -118,6 +113,7 @@ interface DomainFixture {
 
 interface DomainResult {
   artifact_type: string;
+  artifact_type_id: number;
   fixture_path: string;
   asset_pda: string;
   quarantine_pda: string;
@@ -175,9 +171,10 @@ describe("HXQ-Solana Domain Fixture Demos", () => {
     return await sendAndConfirmTransaction(connection, tx, [owner]);
   }
 
-  async function register(contentHash: Buffer, originalHash: Buffer, cosine: number): Promise<string> {
+  async function register(contentHash: Buffer, originalHash: Buffer, artifactType: number, threshold: number): Promise<string> {
     const [pda] = findPDA(contentHash);
-    const data = buildRegisterData(contentHash, originalHash, 0, 128, 6, cosine, 0.0);
+    const metadataHash = sha256(`metadata:${contentHash.toString("hex")}`);
+    const data = buildRegisterData(contentHash, originalHash, artifactType, threshold, metadataHash);
     const ix = new TransactionInstruction({
       keys: [
         { pubkey: pda, isSigner: false, isWritable: true },
@@ -228,9 +225,9 @@ describe("HXQ-Solana Domain Fixture Demos", () => {
     return await sendIx(ix);
   }
 
-  // Run each fixture through the full lifecycle
   for (const fixture of FIXTURES) {
     const f = fixture.data;
+    const artifactTypeId = ARTIFACT_TYPES[f.artifact_type] ?? 255;
     const contentHash = sha256(f.content_identity);
     const originalHash = sha256(f.original_identity);
     const fidelityHash = sha256(f.receipts.fidelity);
@@ -238,12 +235,12 @@ describe("HXQ-Solana Domain Fixture Demos", () => {
     const riskHash = sha256(f.receipts.risk);
     const [assetPDA] = findPDA(contentHash);
 
-    // Quarantine target: separate asset for this domain
     const qContentHash = sha256(f.content_identity + ":quarantine_target");
     const [qPDA] = findPDA(qContentHash);
 
     const result: DomainResult = {
       artifact_type: f.artifact_type,
+      artifact_type_id: artifactTypeId,
       fixture_path: fixture.path,
       asset_pda: assetPDA.toBase58(),
       quarantine_pda: qPDA.toBase58(),
@@ -252,22 +249,18 @@ describe("HXQ-Solana Domain Fixture Demos", () => {
       fidelity_receipt_hash: fidelityHash.toString("hex"),
       behavioral_receipt_hash: behavioralHash.toString("hex"),
       risk_attestation_hash: riskHash.toString("hex"),
-      register_tx: "",
-      fidelity_tx: "",
-      behavioral_tx: "",
-      promote_tx: "",
-      risk_tx: "",
-      transfer_tx: "",
-      quarantine_tx: "",
+      register_tx: "", fidelity_tx: "", behavioral_tx: "", promote_tx: "",
+      risk_tx: "", transfer_tx: "", quarantine_tx: "",
       quarantine_transfer_rejected_error: "",
       all_pass: false,
     };
 
-    describe(`Domain: ${f.artifact_type}`, () => {
+    describe(`Domain: ${f.artifact_type} (type=${artifactTypeId})`, () => {
       it("registers Candidate", async () => {
-        result.register_tx = await register(contentHash, originalHash, 1.0);
+        result.register_tx = await register(contentHash, originalHash, artifactTypeId, 1.0);
         const asset = await fetchAsset(assetPDA);
         expect(asset.status).to.equal(STATUS_CANDIDATE);
+        expect(asset.artifactType).to.equal(artifactTypeId);
         console.log(`    [${f.artifact_type}] register tx: ${result.register_tx}`);
       });
 
@@ -308,15 +301,12 @@ describe("HXQ-Solana Domain Fixture Demos", () => {
       });
 
       it("quarantines separate Active asset", async () => {
-        // Register, receipt, promote a separate asset for quarantine
-        await register(qContentHash, originalHash, 1.0);
+        await register(qContentHash, originalHash, artifactTypeId, 1.0);
         await submitReceipt(IX_FIDELITY, qPDA, fidelityHash);
         await submitReceipt(IX_BEHAVIORAL, qPDA, behavioralHash);
         await noArg(IX_PROMOTE, qPDA);
-
         const before = await fetchAsset(qPDA);
         expect(before.status).to.equal(STATUS_ACTIVE);
-
         result.quarantine_tx = await noArg(IX_QUARANTINE, qPDA);
         const after = await fetchAsset(qPDA);
         expect(after.status).to.equal(STATUS_QUARANTINED);
@@ -333,7 +323,6 @@ describe("HXQ-Solana Domain Fixture Demos", () => {
           expect(e.toString()).to.match(/AssetNotActive|custom program error/i);
           console.log(`    [${f.artifact_type}] quarantined transfer REJECTED`);
         }
-
         result.all_pass = true;
       });
     });
@@ -341,7 +330,6 @@ describe("HXQ-Solana Domain Fixture Demos", () => {
     domainResults.push(result);
   }
 
-  // Export receipt after all domains
   after(() => {
     let gitCommit = "unknown";
     let repoPath = path.resolve(__dirname, "..");
@@ -371,7 +359,7 @@ describe("HXQ-Solana Domain Fixture Demos", () => {
     console.log("\n  ════════════════════════════════════════════════════");
     console.log(`  DOMAIN FIXTURE DEMOS: ${passCount}/${domainResults.length} domains PASS`);
     domainResults.forEach(d => {
-      console.log(`    ${d.artifact_type}: ${d.all_pass ? "PASS" : "FAIL"}`);
+      console.log(`    ${d.artifact_type} (type=${d.artifact_type_id}): ${d.all_pass ? "PASS" : "FAIL"}`);
     });
     console.log(`  Receipt: ${receiptPath}`);
     console.log("  ════════════════════════════════════════════════════\n");
