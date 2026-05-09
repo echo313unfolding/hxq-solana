@@ -222,7 +222,7 @@ pub struct ReceiptGatedAsset {
     pub owner: Pubkey,                      // 32
     pub content_hash: [u8; 32],             // 32
     pub original_hash: [u8; 32],            // 32
-    pub artifact_type: u8,                  // 1  (0=AiTensor, 1=LegalDocument, 2=MedicalRecord, 3=ScientificCompute, 255=Generic)
+    pub artifact_type: u8,                  // 1  (0=AiTensor, 1=Legal, 2=Medical, 3=Scientific, 4=SupplyChain, 5=Credential, 255=Generic)
     pub threshold: f32,                     // 4  (generic fidelity gate, e.g. cosine for AI, 1.0 for "all receipts present")
     pub metadata_hash: [u8; 32],            // 32 (SHA-256 of domain-specific metadata — codec info, document metadata, etc.)
     pub status: u8,                         // 1  (Candidate/Active/Quarantined)
@@ -252,6 +252,8 @@ pub enum ArtifactType {
     LegalDocument = 1,
     MedicalRecord = 2,
     ScientificCompute = 3,
+    SupplyChain = 4,
+    Credential = 5,
     Generic = 255,
 }
 

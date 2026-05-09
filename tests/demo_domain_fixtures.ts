@@ -35,6 +35,8 @@ const ARTIFACT_TYPES: Record<string, number> = {
   legal_document: 1,
   medical_record: 2,
   scientific_compute: 3,
+  supply_chain: 4,
+  credential: 5,
 };
 
 function ixDiscriminator(name: string): Buffer {
@@ -145,6 +147,14 @@ const FIXTURES: { path: string; data: DomainFixture }[] = [
   {
     path: "examples/scientific_compute_receipt/fixture.json",
     data: JSON.parse(fs.readFileSync(path.resolve(__dirname, "..", "examples/scientific_compute_receipt/fixture.json"), "utf-8")),
+  },
+  {
+    path: "examples/supply_chain_passport/fixture.json",
+    data: JSON.parse(fs.readFileSync(path.resolve(__dirname, "..", "examples/supply_chain_passport/fixture.json"), "utf-8")),
+  },
+  {
+    path: "examples/credential_attestation/fixture.json",
+    data: JSON.parse(fs.readFileSync(path.resolve(__dirname, "..", "examples/credential_attestation/fixture.json"), "utf-8")),
   },
 ];
 

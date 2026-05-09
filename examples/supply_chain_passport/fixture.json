@@ -1,0 +1,18 @@
+{
+  "artifact_type": "supply_chain",
+  "description": "Digital Product Passport for lithium-ion battery batch, EU DPP compliant",
+  "content_identity": "dpp:batch_LIB-2026-0508:manufacturer_ACME:model_EV48V100:lot_A7",
+  "original_identity": "bom:batch_LIB-2026-0508:bill_of_materials:v1:cobalt_origin_DRC",
+  "receipts": {
+    "fidelity": "certification:ISO_9001:auditor_TUV_SUD:batch_LIB-2026-0508:passed_2026-04-15",
+    "behavioral": "environmental:carbon_footprint_42kgCO2e:lifecycle_assessment:2026-04-20",
+    "risk": "customs:export_clearance:port_rotterdam:batch_LIB-2026-0508:cleared_2026-05-01"
+  },
+  "state_mapping": {
+    "Candidate": "Manufactured / awaiting certification",
+    "Active": "Certified / in commerce / transferable",
+    "Quarantined": "Recalled / safety hold / compliance block"
+  },
+  "threshold": "ISO certification + environmental audit + customs clearance",
+  "notes": "The actual product passport bundle (materials, test results, supply chain data) stays off-chain. Only certification hashes, audit receipts, and lifecycle state go on-chain. Quarantine means the batch is recalled or under safety investigation."
+}

@@ -2,9 +2,9 @@
   "demo": "HXQ_SOLANA_LIFECYCLE_DEMO_V0",
   "program_id": "EnDRZxswjvqKQhnPuMY6m6AFK3sxCKRX2dokXxAYPYrP",
   "repo_path": "/home/voidstr3m33/hxq-solana",
-  "git_commit": "6da593c13103cb018e9dd0081926431dd3bbfa5f",
-  "timestamp_start": "2026-05-08T23:59:32.978Z",
-  "timestamp_end": "2026-05-08T23:59:39.099Z",
+  "git_commit": "f421c58d13839de0cb2439a542f18111e457710d",
+  "timestamp_start": "2026-05-09T00:53:04.528Z",
+  "timestamp_end": "2026-05-09T00:53:19.374Z",
   "deterministic_content": "hxq:qwen2.5-coder-3b:layer.0.self_attn.q_proj:af6:g128:cos0.9993",
   "content_hash": "166772093357c7b2dd5c4944ce6bca3ca60a8233698825db138cf5d405aeac2f",
   "original_hash": "ea736f4b1daf857a9ec94f73efc80ac98591f602254251a2e3468553c64b524a",
@@ -14,12 +14,12 @@
   "fidelity_receipt_hash": "47d20dc8736b39e065ed6d147e364519db18206c7735cc8b3d0d4b13d8b25950",
   "behavioral_receipt_hash": "c693a5e5cc73be7d64bb47f5a8d41950c294359b0830b180e03ea8b983dfdf07",
   "risk_attestation_hash": "3aea33fdcb064481f9cb879d584a5c9621b844efc44824be4562dd5a162e9545",
-  "new_owner_pubkey": "7bTYamNGySC6r5TjsG72L1DLCQTNEKKYRpVVGvqHF8Yr",
+  "new_owner_pubkey": "CsnVhjWVXZF4tRSQKtEVo8t6hm2RQBW3VuQtxsiuKw3m",
   "steps": [
     {
       "step": 1,
       "name": "register_asset",
-      "tx": "2TLXCpLP5xm2u4Ks3ZzVUt2Zw14SKMwBrH6HqRWjXhfQG4qx6uEdtKKAF8ruYxvJe6cxrKBVbTNULoXg5CJKBcA6",
+      "tx": "33JJFkrsfvfKKdQzmtcECgDqtpNRyzgLfrXuPeuNkdzhBaJkrXzP4wTRU3LYKi8PeLupYsyXPinq65WLE9gziwt5",
       "error": null,
       "status_before": null,
       "status_after": "Candidate",
@@ -28,7 +28,7 @@
     {
       "step": 2,
       "name": "submit_fidelity_receipt",
-      "tx": "2FdWJY3hdDPbetQJPDhEgzpJ24wD7uF6DGbiocptsEiPiitjcNv9rNYSwKzwjKm8d7aoiuaVGeBVhFL2g6u9i4wt",
+      "tx": "fJ5zDyRNXGkyKnMP2D5QjzL8i5q8T1sQVb49LeaNihS5BKP6tn7AnpmRd2F7uVQhGoQ61vnLzE7MiFrzy8JN7uw",
       "error": null,
       "status_before": "Candidate",
       "status_after": "Candidate",
@@ -37,7 +37,7 @@
     {
       "step": 3,
       "name": "submit_behavioral_receipt",
-      "tx": "KgArsNzQe4EkXpjUs6oKSiHRXw9PgU3bKZd6h6RDwFDS3HPK4njWedUGEoQzr7z96GPYGvdRpq2g9xkq22SX98r",
+      "tx": "WYwUqKxLayBrFa13ScRfqydutwRYqQVNBpiva27cjTa8QGbkAKq5AN9t9vWwvaPDHVS9x7oiXKwRD1opT3DoLYh",
       "error": null,
       "status_before": "Candidate",
       "status_after": "Candidate",
@@ -55,7 +55,7 @@
     {
       "step": 5,
       "name": "promote_asset",
-      "tx": "4bJpg7hEu15A5wfMuXbQUaKFT881VdREUcw8nCgQVwKXaAtXiGskAyPp4wXUAG6VhM5jXKaiYzZyjUPN9wx868Dv",
+      "tx": "3zBSqPbSfyMZPpazQoKBT33ebwvorPKCujCk9iCc5B5ud8GTYAALFvBgaedSakPm3xFfo6J1PFH5FFqyov63irn3",
       "error": null,
       "status_before": "Candidate",
       "status_after": "Active",
@@ -64,7 +64,7 @@
     {
       "step": 6,
       "name": "submit_risk_attestation",
-      "tx": "pYh3KNPDf1isaHZrqpQpJzobWnLttGdcDQCG5wwCCLnuBe4xPYyx3CNyHdbWbNeojzTGcGTU8rkoLjPEB4o8pxe",
+      "tx": "y3djLjD8989WsihKzsnMr5znajTV3tSk5mrdKSMtjU8ViTtErCb1jmYn2TCc7YE8ziup5XVSFxyE47rUSFPKbod",
       "error": null,
       "status_before": "Active",
       "status_after": "Active",
@@ -73,7 +73,7 @@
     {
       "step": 7,
       "name": "transfer_asset",
-      "tx": "3UvN5MEnqLf5ETV1wQ2Tim3w48GT8EUJStpwBRm59yVWKwDRTi2aqN3F915zUWmfQcxchfowx6EhndJ9DrZmZbYx",
+      "tx": "5z12TLQ1i1HcC1aLhzkg3W3qPg7Sw9cuWu7gsYbvDLbMQEHVtUvUWc22GvrN2CL2sR5c7cabXUNzY7yjf85g81dK",
       "error": null,
       "status_before": "Active",
       "status_after": "Active",
@@ -82,7 +82,7 @@
     {
       "step": 8,
       "name": "quarantine_asset",
-      "tx": "2biqjWVFyJjb8Rp3AxgYxxai2VKsgaAzg2694avXn7gmL2pgJAWJMKsMx7cWmdkwBo2tYFEGfxiVDQyS8wE9fud3",
+      "tx": "3ZetHVNdvwz8EBJFsvQdeWsGs5SY7mfvFmET6SfeN83ndbBNKegndcyiSZiuakeNUjMdJ6MKscNpBk941nNr9pbE",
       "error": null,
       "status_before": "Active",
       "status_after": "Quarantined",
@@ -99,7 +99,7 @@
     }
   ],
   "final_state": {
-    "owner": "7bTYamNGySC6r5TjsG72L1DLCQTNEKKYRpVVGvqHF8Yr",
+    "owner": "CsnVhjWVXZF4tRSQKtEVo8t6hm2RQBW3VuQtxsiuKw3m",
     "status": "Active",
     "artifact_type": 0,
     "threshold": 0.9993000030517578,

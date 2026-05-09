@@ -8,9 +8,9 @@ It stores hashes, receipts, and state transitions on-chain while keeping model/t
 
 - 16/16 base program tests passing
 - 9/9 AI tensor lifecycle demo passing
-- 24/24 domain fixture demos passing (legal, medical, scientific)
+- 40/40 domain fixture demos passing (legal, medical, scientific, supply chain, credential)
 - 9/9 offline receipt verifier tests passing
-- **58/58 total tests passing**
+- **74/74 total tests passing**
 
 ## Why this exists
 
@@ -37,7 +37,7 @@ Most blockchain examples prove that a transaction happened. HXQ-Solana proves th
             submit behavioral receipt
                          │
                          ▼
-              cosine >= 0.998? ──no──▶ REJECTED
+            threshold >= 0.998? ──no──▶ REJECTED
                          │
                         yes
                          │
@@ -83,13 +83,13 @@ npx ts-mocha -p ./tsconfig.json -t 120000 tests/demo_lifecycle.ts
 
 Expected result: 9/9 lifecycle steps pass. Receipt written to `receipts/hxq_solana_lifecycle_demo_20260508.json`.
 
-### Run domain fixture demos (24 tests across 3 domains)
+### Run domain fixture demos (40 tests across 5 domains)
 
 ```bash
 npx ts-mocha -p ./tsconfig.json -t 120000 tests/demo_domain_fixtures.ts
 ```
 
-Expected result: 24/24 tests pass across legal, medical, and scientific fixtures. Receipt written to `receipts/domain_fixture_demos_20260508.json`.
+Expected result: 40/40 tests pass across legal, medical, scientific, supply chain, and credential fixtures. Receipt written to `receipts/domain_fixture_demos_20260508.json`.
 
 ### Verify receipts without running localnet
 
@@ -106,7 +106,7 @@ Or via npm script:
 npm run verify:receipt -- receipts/hxq_solana_lifecycle_demo_20260508.json
 ```
 
-The verifier checks: required fields, program ID, tx signatures, 32-byte hex hashes, rejection error messages (`FidelityBelowThreshold`, `AssetNotActive`), pass/fail status, and final state consistency. Exit code 0 on pass, nonzero on fail.
+The verifier checks: required fields, program ID, tx signatures, 32-byte hex hashes, rejection error messages (`ThresholdBelowGate`, `AssetNotActive`), pass/fail status, and final state consistency. Exit code 0 on pass, nonzero on fail.
 
 ### Run verifier tests (9 tests)
 
@@ -119,15 +119,13 @@ Tests include validation of both receipt types plus 7 corruption scenarios (wron
 ## On-chain account layout
 
 ```
-HxqAssetAccount (226 bytes)
+ReceiptGatedAsset (259 bytes)
 ├── owner: Pubkey                      (32)
 ├── content_hash: [u8; 32]            (32)  ← SHA-256 of off-chain artifact
 ├── original_hash: [u8; 32]           (32)  ← SHA-256 of source artifact
-├── codec: u8                          (1)
-├── group_size: u16                    (2)
-├── bits_per_weight: u8                (1)
-├── cosine_min: f32                    (4)   ← fidelity threshold
-├── ppl_delta_pct: f32                 (4)
+├── artifact_type: u8                  (1)   ← 0=AI, 1=Legal, 2=Medical, 3=Scientific, 4=SupplyChain, 5=Credential, 255=Generic
+├── threshold: f32                     (4)   ← fidelity gate (e.g. cosine for AI, 1.0 for "all receipts present")
+├── metadata_hash: [u8; 32]           (32)  ← SHA-256 of domain-specific metadata
 ├── status: u8                         (1)   ← 0=Candidate, 1=Active, 2=Quarantined
 ├── fidelity_receipt_hash: [u8; 32]   (32)
 ├── behavioral_receipt_hash: [u8; 32] (32)
@@ -158,10 +156,10 @@ EnDRZxswjvqKQhnPuMY6m6AFK3sxCKRX2dokXxAYPYrP
 ## What this IS
 
 - A localnet proof of receipt-gated state transitions for off-chain artifacts
-- A working Anchor program with 58 passing tests across 5 test suites
-- A pattern proven to generalize beyond AI tensors to legal, medical, and scientific domains
+- A working Anchor program with 74 passing tests across 4 test suites
+- A pattern proven to generalize across 5 domains: AI, legal, medical, scientific, supply chain, and credential
 
-The legal, medical, and scientific examples are fixtures only. They demonstrate a provenance/state-machine pattern, not legal, medical, or regulatory compliance.
+The domain examples are fixtures only. They demonstrate a provenance/state-machine pattern, not legal, medical, or regulatory compliance.
 
 ## The pattern
 
@@ -182,6 +180,8 @@ This pattern applies to:
 | Legal | Contract, evidence, filing | Attorney review, notarization | Both parties signed |
 | Medical | Patient record, lab result | Provider attestation, consent | HIPAA-compliant access |
 | Scientific compute | Dataset, model output | Benchmark validation, replication | Quality threshold |
+| Supply chain | Product passport, BOM | ISO certification, environmental audit | Certification + customs |
+| Credentials | License, certification | Board verification, continuing education | Verification + clearance |
 
 ## License
 

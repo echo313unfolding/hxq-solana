@@ -1,0 +1,18 @@
+{
+  "artifact_type": "credential",
+  "description": "Professional engineering license attestation, state board verified",
+  "content_identity": "credential:PE_license:state_TX:number_142857:holder_jdoe:issued_2024-06-01",
+  "original_identity": "application:PE_exam:NCEES:session_2024-04:score_verified:state_TX",
+  "receipts": {
+    "fidelity": "verification:state_board_TX:license_142857:status_active:verified_2026-05-01",
+    "behavioral": "continuing_education:40_PDH:cycle_2024-2026:provider_ASCE:completed_2026-04-30",
+    "risk": "disciplinary:no_actions:state_TX:license_142857:checked_2026-05-05"
+  },
+  "state_mapping": {
+    "Candidate": "Applied / exam passed / awaiting board confirmation",
+    "Active": "Licensed / verified / transferable between jurisdictions",
+    "Quarantined": "Suspended / under investigation / disciplinary hold"
+  },
+  "threshold": "Board verification + continuing education + disciplinary clearance",
+  "notes": "The actual credential bundle (exam scores, education transcripts, work experience logs) stays off-chain. Only verification hashes, CE completion receipts, and license state go on-chain. Quarantine means the license is suspended or under disciplinary review."
+}

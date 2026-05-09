@@ -155,7 +155,7 @@ function verifyDomainFixtures(receipt: any): CheckResult[] {
   const domains = receipt.domains;
   checks.push(check("domains is array", Array.isArray(domains)));
   checks.push(check("domains_tested >= 3", receipt.domains_tested >= 3,
-    `got: ${receipt.domains_tested}`));
+    `got: ${receipt.domains_tested} (minimum 3 required)`));
 
   if (!Array.isArray(domains)) return checks;
 
