@@ -102,7 +102,7 @@ function verifyLifecycle(receipt: any): CheckResult[] {
     const badPromotion = steps.find((s: any) => s.name === "promote_asset_REJECTED");
     if (badPromotion) {
       checks.push(check("bad promotion has FidelityBelowThreshold error",
-        typeof badPromotion.error === "string" && /FidelityBelowThreshold|0x1776/i.test(badPromotion.error),
+        typeof badPromotion.error === "string" && /FidelityBelowThreshold|ThresholdBelowGate|0x1776/i.test(badPromotion.error),
         `error: ${(badPromotion.error || "").slice(0, 80)}`));
     } else {
       checks.push(check("bad promotion step exists", false, "promote_asset_REJECTED step not found"));
