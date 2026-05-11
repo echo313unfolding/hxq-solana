@@ -1,0 +1,46 @@
+{
+  "receipt_id": "explore_rga_proof_of_concept_20260510",
+  "type": "explore_synthesis",
+  "timestamp": "2026-05-10T00:00:00",
+  "description": "Proof-of-concept for EXPLORE mode: three independently receipted systems connected to reveal unnamed architectural pattern",
+
+  "input_receipts": [
+    {
+      "system": "hxq-solana",
+      "receipt": "75/75 localnet tests, verify_claim.py VERIFIED/DISPUTED",
+      "mechanism": "Independent cosine recomputation gates promotion"
+    },
+    {
+      "system": "morphsat_v8.3",
+      "receipt": "100/100, morphsat_v83_early_verdict_guard",
+      "mechanism": "Independent tool-count check gates verdict transition"
+    },
+    {
+      "system": "specialist_compute_pool",
+      "receipt": "153/153 tests",
+      "mechanism": "Independent behavioral eval gates asset promotion and routing"
+    }
+  ],
+
+  "synthesis_output": {
+    "pattern_name": "Recomputation-Gated Architecture (RGA)",
+    "core_distinction": "Gate is recomputation (produce ground truth independently, compare), NOT evaluation (look at the work, judge it). Evaluation is bypassable; recomputation is not.",
+    "biological_grounding": "Cell cycle checkpoint pattern — G1/S, G2/M, spindle assembly. ATM/ATR kinases directly check DNA integrity, not the cell's intention to divide. Same structural primitive evolved independently for same failure mode.",
+    "layers_identified": [
+      "Data layer: receipts as recomputable claims (hash verification)",
+      "Workflow layer: PLAN → verify → EXECUTE with kill conditions",
+      "Architecture layer: hxq-solana, MorphSAT, specialist compute pool",
+      "Memory layer: codon SSM as audit-readable state (recomputable from event stream)"
+    ],
+    "counterexample_search": "No clean counterexample found across stack. helix-substrate hash-checks (recomputation), Pat's helix-kv match=true (recomputation), born-compressed training (independent re-eval), PR #21412 Wasserstein (independent recomputation by Zyphra).",
+    "predictions": [
+      "Next instance will be reasoning-chain recomputation (second agent, same inputs, gate on agreement)",
+      "Most current AI safety work is review-style, not recomputation-style — this is a testable claim"
+    ],
+    "leap_strength": "STRONG — multiple receipts support, structural analogy holds, falsifiable predictions"
+  },
+
+  "template_verdict": "PASS — exercise produced named pattern, biological grounding, unifying frame across 4 layers, falsifiable predictions, and a reframe of receipt discipline as architecture. None present in individual findings. All follow from combination.",
+
+  "explore_mode_validated": true
+}

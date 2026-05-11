@@ -1,0 +1,34 @@
+{
+  "claim": {
+    "content_hash": "09a85985af290e42807a00e3c1e150698415858bcd4f202b46f1b3d007ad8558",
+    "original_hash": "d66c2be64edcee99ad268192516ba3046bde9f0375af5e8a8f2c475eea01dd84",
+    "cosine_claim": 0.999718,
+    "codec_id": 0,
+    "codec_name": "affine_6",
+    "architecture": 0,
+    "architecture_name": "transformer",
+    "group_size": 128,
+    "ppl_delta_bps": 53,
+    "codec_gate": 0.998
+  },
+  "checks": {
+    "content_hash_match": false,
+    "original_hash_match": true,
+    "cosine_measured": 0.000451,
+    "cosine_delta": 0.999267,
+    "cosine_verified": false,
+    "meets_codec_gate": false,
+    "claim_meets_gate": true
+  },
+  "verdict": "DISPUTED",
+  "verdict_detail": "FAILED checks: content_hash_match, cosine_verified, meets_codec_gate. On-chain commitment does NOT match independent measurement.",
+  "cost": {
+    "wall_time_s": 0.048,
+    "cpu_time_s": 0.384,
+    "peak_memory_mb": 72.7,
+    "python_version": "3.10.12",
+    "hostname": "Echo",
+    "timestamp_start": "2026-05-10T23:35:23",
+    "timestamp_end": "2026-05-10T23:35:23"
+  }
+}
