@@ -68,9 +68,24 @@ function encodeF32(val: number): Buffer {
   return buf;
 }
 
+function encodeU16LE(val: number): Buffer {
+  const buf = Buffer.alloc(2);
+  buf.writeUInt16LE(val, 0);
+  return buf;
+}
+
+function encodeI16LE(val: number): Buffer {
+  const buf = Buffer.alloc(2);
+  buf.writeInt16LE(val, 0);
+  return buf;
+}
+
 function buildRegisterData(
   contentHash: Buffer, originalHash: Buffer,
-  artifactType: number, threshold: number, metadataHash: Buffer
+  artifactType: number, threshold: number, metadataHash: Buffer,
+  codecId: number = 0, groupSize: number = 0, bitsPerWeight: number = 0,
+  architecture: number = 0, cosineClaim: number = 0.0,
+  pplDeltaBps: number = 0, artifactCid: Buffer = Buffer.alloc(32),
 ): Buffer {
   return Buffer.concat([
     IX_REGISTER,
@@ -78,6 +93,13 @@ function buildRegisterData(
     Buffer.from([artifactType]),
     encodeF32(threshold),
     metadataHash,
+    Buffer.from([codecId]),
+    encodeU16LE(groupSize),
+    Buffer.from([bitsPerWeight]),
+    Buffer.from([architecture]),
+    encodeF32(cosineClaim),
+    encodeI16LE(pplDeltaBps),
+    artifactCid,
   ]);
 }
 
@@ -89,6 +111,15 @@ function deserializeAsset(data: Buffer) {
   const artifactType = data[o]; o += 1;
   const threshold = data.readFloatLE(o); o += 4;
   const metadataHash = data.slice(o, o + 32); o += 32;
+  // Codec-aware fields
+  const codecId = data[o]; o += 1;
+  const groupSize = data.readUInt16LE(o); o += 2;
+  const bitsPerWeight = data[o]; o += 1;
+  const architecture = data[o]; o += 1;
+  const cosineClaim = data.readFloatLE(o); o += 4;
+  const pplDeltaBps = data.readInt16LE(o); o += 2;
+  const artifactCid = data.slice(o, o + 32); o += 32;
+  // State fields
   const status = data[o]; o += 1;
   const fidelityReceiptHash = data.slice(o, o + 32); o += 32;
   const behavioralReceiptHash = data.slice(o, o + 32); o += 32;
@@ -99,6 +130,7 @@ function deserializeAsset(data: Buffer) {
   const bump = data[o];
   return {
     owner, contentHash, originalHash, artifactType, threshold, metadataHash,
+    codecId, groupSize, bitsPerWeight, architecture, cosineClaim, pplDeltaBps, artifactCid,
     status, fidelityReceiptHash, behavioralReceiptHash, riskAttestationHash,
     transferCount, createdAt, updatedAt, bump,
   };

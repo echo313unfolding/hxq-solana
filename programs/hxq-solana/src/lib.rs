@@ -27,6 +27,7 @@ pub mod hxq_solana {
 
     /// Register a new off-chain artifact.
     /// Status starts as Candidate — must be promoted before transfer.
+    /// For AI tensor assets (artifact_type=0), codec fields are required.
     pub fn register_asset(
         ctx: Context<RegisterAsset>,
         content_hash: [u8; 32],
@@ -34,6 +35,13 @@ pub mod hxq_solana {
         artifact_type: u8,
         threshold: f32,
         metadata_hash: [u8; 32],
+        codec_id: u8,
+        group_size: u16,
+        bits_per_weight: u8,
+        architecture: u8,
+        cosine_claim: f32,
+        ppl_delta_bps: i16,
+        artifact_cid: [u8; 32],
     ) -> Result<()> {
         let asset = &mut ctx.accounts.asset;
         asset.owner = ctx.accounts.owner.key();
@@ -42,6 +50,13 @@ pub mod hxq_solana {
         asset.artifact_type = artifact_type;
         asset.threshold = threshold;
         asset.metadata_hash = metadata_hash;
+        asset.codec_id = codec_id;
+        asset.group_size = group_size;
+        asset.bits_per_weight = bits_per_weight;
+        asset.architecture = architecture;
+        asset.cosine_claim = cosine_claim;
+        asset.ppl_delta_bps = ppl_delta_bps;
+        asset.artifact_cid = artifact_cid;
         asset.status = AssetStatus::Candidate as u8;
         asset.fidelity_receipt_hash = [0u8; 32];
         asset.behavioral_receipt_hash = [0u8; 32];
@@ -56,6 +71,9 @@ pub mod hxq_solana {
             owner: asset.owner,
             content_hash,
             artifact_type,
+            codec_id,
+            architecture,
+            cosine_claim,
             threshold,
         });
 
@@ -126,7 +144,7 @@ pub mod hxq_solana {
 
     /// Promote asset from Candidate to Active.
     /// Requires both fidelity and behavioral receipt hashes to be non-zero
-    /// and threshold to meet the minimum gate (0.998).
+    /// and cosine_claim to meet the per-codec threshold gate.
     pub fn promote_asset(ctx: Context<UpdateAsset>) -> Result<()> {
         let asset = &mut ctx.accounts.asset;
 
@@ -142,17 +160,31 @@ pub mod hxq_solana {
             asset.behavioral_receipt_hash != [0u8; 32],
             ReceiptGateError::MissingBehavioralReceipt
         );
-        require!(
-            asset.threshold >= THRESHOLD_GATE,
-            ReceiptGateError::ThresholdBelowGate
-        );
+
+        // Per-codec threshold gate: AI tensor assets use cosine_claim against
+        // codec-specific gate; other domains use the legacy threshold field.
+        let gate = if asset.artifact_type == ArtifactType::AiTensor as u8 {
+            let claim = asset.cosine_claim;
+            let required = codec_threshold(asset.codec_id);
+            require!(
+                claim >= required,
+                ReceiptGateError::ThresholdBelowGate
+            );
+            claim
+        } else {
+            require!(
+                asset.threshold >= THRESHOLD_GATE,
+                ReceiptGateError::ThresholdBelowGate
+            );
+            asset.threshold
+        };
 
         asset.status = AssetStatus::Active as u8;
         asset.updated_at = Clock::get()?.unix_timestamp;
 
         emit!(AssetPromoted {
             asset: asset.key(),
-            threshold: asset.threshold,
+            threshold: gate,
         });
 
         Ok(())
@@ -211,7 +243,20 @@ pub mod hxq_solana {
 // Constants
 // ═══════════════════════════════════════════════════════════════════════════════
 
+/// Default threshold gate for non-AI artifact types.
 const THRESHOLD_GATE: f32 = 0.998;
+
+/// Per-codec fidelity gate. AI tensor assets use cosine_claim against these.
+/// Different codecs have different quality ceilings — the gate reflects that.
+fn codec_threshold(codec_id: u8) -> f32 {
+    match codec_id {
+        0 => 0.998,  // CodecId::Affine6 — tight gate, proven quality
+        1 => 0.998,  // CodecId::AffineG128 — same gate
+        2 => 0.997,  // CodecId::Q5Hierarchical — slightly looser
+        3 => 0.995,  // CodecId::Affine4 — known quality gap
+        _ => 0.998,  // Unknown codec — strict default
+    }
+}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Account
@@ -223,12 +268,21 @@ pub struct ReceiptGatedAsset {
     pub content_hash: [u8; 32],             // 32
     pub original_hash: [u8; 32],            // 32
     pub artifact_type: u8,                  // 1  (0=AiTensor, 1=Legal, 2=Medical, 3=Scientific, 4=SupplyChain, 5=Credential, 255=Generic)
-    pub threshold: f32,                     // 4  (generic fidelity gate, e.g. cosine for AI, 1.0 for "all receipts present")
-    pub metadata_hash: [u8; 32],            // 32 (SHA-256 of domain-specific metadata — codec info, document metadata, etc.)
+    pub threshold: f32,                     // 4  (generic fidelity gate for non-AI types)
+    pub metadata_hash: [u8; 32],            // 32 (SHA-256 of domain-specific metadata)
+    // --- Codec-aware fields (populated for AiTensor, zeroed for other types) ---
+    pub codec_id: u8,                       // 1  (0=Affine6, 1=AffineG128, 2=Q5Hierarchical, 3=Affine4, 255=Unknown)
+    pub group_size: u16,                    // 2  (32, 64, 128, 256)
+    pub bits_per_weight: u8,                // 1  (4, 5, 6, 8)
+    pub architecture: u8,                   // 1  (0=Transformer, 1=SSM, 2=Hybrid, 3=MoE, 4=Vision)
+    pub cosine_claim: f32,                  // 4  (claimed fidelity score — independently verifiable)
+    pub ppl_delta_bps: i16,                 // 2  (PPL delta in basis points: +53 = +0.53%)
+    pub artifact_cid: [u8; 32],             // 32 (content-addressable locator for off-chain artifact)
+    // --- State fields ---
     pub status: u8,                         // 1  (Candidate/Active/Quarantined)
-    pub fidelity_receipt_hash: [u8; 32],    // 32 (validation/fidelity/review receipt)
-    pub behavioral_receipt_hash: [u8; 32],  // 32 (execution/behavioral/notarization receipt)
-    pub risk_attestation_hash: [u8; 32],    // 32 (risk/compliance/audit attestation)
+    pub fidelity_receipt_hash: [u8; 32],    // 32
+    pub behavioral_receipt_hash: [u8; 32],  // 32
+    pub risk_attestation_hash: [u8; 32],    // 32
     pub transfer_count: u32,                // 4
     pub created_at: i64,                    // 8
     pub updated_at: i64,                    // 8
@@ -236,16 +290,16 @@ pub struct ReceiptGatedAsset {
 }
 
 impl ReceiptGatedAsset {
-    // 8 (discriminator) + 32 + 32 + 32 + 1 + 4 + 32 + 1 + 32 + 32 + 32 + 4 + 8 + 8 + 1 = 259
-    pub const LEN: usize = 8 + 32 + 32 + 32 + 1 + 4 + 32 + 1 + 32 + 32 + 32 + 4 + 8 + 8 + 1;
+    // 8 (discriminator) + 32 + 32 + 32 + 1 + 4 + 32 + 1+2+1+1+4+2+32 + 1 + 32 + 32 + 32 + 4 + 8 + 8 + 1 = 302
+    pub const LEN: usize = 8 + 32 + 32 + 32 + 1 + 4 + 32 + 1 + 2 + 1 + 1 + 4 + 2 + 32 + 1 + 32 + 32 + 32 + 4 + 8 + 8 + 1;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Artifact types
 // ═══════════════════════════════════════════════════════════════════════════════
 
-/// Domain-specific artifact types. The program treats all types identically;
-/// this enum exists for off-chain indexing and display.
+/// Domain-specific artifact types. AI tensor type gets per-codec threshold gate;
+/// other types use the generic threshold field.
 #[repr(u8)]
 pub enum ArtifactType {
     AiTensor = 0,
@@ -255,6 +309,26 @@ pub enum ArtifactType {
     SupplyChain = 4,
     Credential = 5,
     Generic = 255,
+}
+
+/// HXQ codec variants. Determines per-codec threshold gate for AI tensor assets.
+#[repr(u8)]
+pub enum CodecId {
+    Affine6 = 0,         // 6.25 bpw, tight gate 0.998
+    AffineG128 = 1,      // 8.25 bpw, tight gate 0.998
+    Q5Hierarchical = 2,  // 5.5 bpw, gate 0.997
+    Affine4 = 3,         // ~4.5 bpw, gate 0.995 (known quality gap)
+    Unknown = 255,
+}
+
+/// Model architecture — the chain knows what it's compressing.
+#[repr(u8)]
+pub enum Architecture {
+    Transformer = 0,
+    Ssm = 1,
+    Hybrid = 2,    // e.g. Zamba2 (transformer + mamba)
+    Moe = 3,
+    Vision = 4,
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -321,6 +395,9 @@ pub struct AssetRegistered {
     pub owner: Pubkey,
     pub content_hash: [u8; 32],
     pub artifact_type: u8,
+    pub codec_id: u8,
+    pub architecture: u8,
+    pub cosine_claim: f32,
     pub threshold: f32,
 }
 

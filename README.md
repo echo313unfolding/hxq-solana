@@ -6,11 +6,11 @@ It stores hashes, receipts, and state transitions on-chain while keeping model/t
 
 ## Current verification
 
-- 16/16 base program tests passing
+- 17/17 base program tests passing (includes per-codec threshold gate test)
 - 9/9 AI tensor lifecycle demo passing
 - 40/40 domain fixture demos passing (legal, medical, scientific, supply chain, credential)
 - 9/9 offline receipt verifier tests passing
-- **74/74 total tests passing**
+- **75/75 total tests passing**
 
 ## Why this exists
 
@@ -119,13 +119,22 @@ Tests include validation of both receipt types plus 7 corruption scenarios (wron
 ## On-chain account layout
 
 ```
-ReceiptGatedAsset (259 bytes)
+ReceiptGatedAsset (302 bytes)
 ├── owner: Pubkey                      (32)
 ├── content_hash: [u8; 32]            (32)  ← SHA-256 of off-chain artifact
 ├── original_hash: [u8; 32]           (32)  ← SHA-256 of source artifact
 ├── artifact_type: u8                  (1)   ← 0=AI, 1=Legal, 2=Medical, 3=Scientific, 4=SupplyChain, 5=Credential, 255=Generic
-├── threshold: f32                     (4)   ← fidelity gate (e.g. cosine for AI, 1.0 for "all receipts present")
+├── threshold: f32                     (4)   ← fidelity gate for non-AI types
 ├── metadata_hash: [u8; 32]           (32)  ← SHA-256 of domain-specific metadata
+│   ── Codec-aware fields (AI tensor type) ──
+├── codec_id: u8                       (1)   ← 0=Affine6, 1=AffineG128, 2=Q5Hierarchical, 3=Affine4
+├── group_size: u16                    (2)   ← 32, 64, 128, 256
+├── bits_per_weight: u8                (1)   ← 4, 5, 6, 8
+├── architecture: u8                   (1)   ← 0=Transformer, 1=SSM, 2=Hybrid, 3=MoE, 4=Vision
+├── cosine_claim: f32                  (4)   ← claimed fidelity (independently verifiable)
+├── ppl_delta_bps: i16                 (2)   ← PPL delta in basis points (+53 = +0.53%)
+├── artifact_cid: [u8; 32]            (32)  ← content-addressable locator for off-chain artifact
+│   ── State fields ──
 ├── status: u8                         (1)   ← 0=Candidate, 1=Active, 2=Quarantined
 ├── fidelity_receipt_hash: [u8; 32]   (32)
 ├── behavioral_receipt_hash: [u8; 32] (32)
@@ -135,6 +144,19 @@ ReceiptGatedAsset (259 bytes)
 ├── updated_at: i64                    (8)
 └── bump: u8                           (1)
 ```
+
+### Per-codec threshold gate
+
+AI tensor assets use `cosine_claim` against codec-specific gates instead of the single `0.998` constant:
+
+| Codec | ID | Gate | bpw |
+|-------|-----|------|-----|
+| Affine6 | 0 | 0.998 | 6.25 |
+| AffineG128 | 1 | 0.998 | 8.25 |
+| Q5 Hierarchical | 2 | 0.997 | 5.5 |
+| Affine4 | 3 | 0.995 | ~4.5 |
+
+Non-AI artifact types (legal, medical, etc.) use the generic `threshold` field with the default 0.998 gate.
 
 PDA seeds: `["hxq-asset", content_hash]` (content-addressed).
 

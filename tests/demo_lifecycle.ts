@@ -63,9 +63,24 @@ function encodeF32(val: number): Buffer {
   return buf;
 }
 
+function encodeU16LE(val: number): Buffer {
+  const buf = Buffer.alloc(2);
+  buf.writeUInt16LE(val, 0);
+  return buf;
+}
+
+function encodeI16LE(val: number): Buffer {
+  const buf = Buffer.alloc(2);
+  buf.writeInt16LE(val, 0);
+  return buf;
+}
+
 function buildRegisterData(
   contentHash: Buffer, originalHash: Buffer,
-  artifactType: number, threshold: number, metadataHash: Buffer
+  artifactType: number, threshold: number, metadataHash: Buffer,
+  codecId: number = 0, groupSize: number = 128, bitsPerWeight: number = 6,
+  architecture: number = 0, cosineClaim: number = 0.0,
+  pplDeltaBps: number = 0, artifactCid: Buffer = Buffer.alloc(32),
 ): Buffer {
   return Buffer.concat([
     IX_REGISTER_ASSET,
@@ -73,6 +88,13 @@ function buildRegisterData(
     Buffer.from([artifactType]),
     encodeF32(threshold),
     metadataHash,
+    Buffer.from([codecId]),
+    encodeU16LE(groupSize),
+    Buffer.from([bitsPerWeight]),
+    Buffer.from([architecture]),
+    encodeF32(cosineClaim),
+    encodeI16LE(pplDeltaBps),
+    artifactCid,
   ]);
 }
 
@@ -88,6 +110,15 @@ function deserializeAsset(data: Buffer) {
   const artifactType = data[o]; o += 1;
   const threshold = data.readFloatLE(o); o += 4;
   const metadataHash = data.slice(o, o + 32); o += 32;
+  // Codec-aware fields
+  const codecId = data[o]; o += 1;
+  const groupSize = data.readUInt16LE(o); o += 2;
+  const bitsPerWeight = data[o]; o += 1;
+  const architecture = data[o]; o += 1;
+  const cosineClaim = data.readFloatLE(o); o += 4;
+  const pplDeltaBps = data.readInt16LE(o); o += 2;
+  const artifactCid = data.slice(o, o + 32); o += 32;
+  // State fields
   const status = data[o]; o += 1;
   const fidelityReceiptHash = data.slice(o, o + 32); o += 32;
   const behavioralReceiptHash = data.slice(o, o + 32); o += 32;
@@ -98,6 +129,7 @@ function deserializeAsset(data: Buffer) {
   const bump = data[o];
   return {
     owner, contentHash, originalHash, artifactType, threshold, metadataHash,
+    codecId, groupSize, bitsPerWeight, architecture, cosineClaim, pplDeltaBps, artifactCid,
     status, fidelityReceiptHash, behavioralReceiptHash, riskAttestationHash,
     transferCount, createdAt, updatedAt, bump,
   };
@@ -187,9 +219,16 @@ describe("HXQ-Solana Lifecycle Demo", () => {
     return await sendAndConfirmTransaction(connection, tx, [owner]);
   }
 
-  async function registerAsset(hash: Buffer, threshold: number, artifactType = 0) {
+  async function registerAsset(
+    hash: Buffer, threshold: number, artifactType = 0,
+    codecId = 0, groupSize = 128, bitsPerWeight = 6,
+    architecture = 0, cosineClaim = 0.0, pplDeltaBps = 0,
+  ) {
     const [pda] = findAssetPDA(hash);
-    const data = buildRegisterData(hash, originalHash, artifactType, threshold, metadataHash);
+    const data = buildRegisterData(
+      hash, originalHash, artifactType, threshold, metadataHash,
+      codecId, groupSize, bitsPerWeight, architecture, cosineClaim, pplDeltaBps,
+    );
     const ix = new TransactionInstruction({
       keys: [
         { pubkey: pda, isSigner: false, isWritable: true },
@@ -246,9 +285,11 @@ describe("HXQ-Solana Lifecycle Demo", () => {
 
   let stepNum = 0;
 
-  it("Step 1: Register asset as Candidate (threshold=0.9993)", async () => {
+  it("Step 1: Register codec-aware asset as Candidate (affine_6, hybrid, cos=0.9993)", async () => {
     stepNum = 1;
-    const tx = await registerAsset(contentHash, 0.9993);
+    // Qwen2.5-Coder-3B layer 0 Q projection, affine_6, transformer
+    const tx = await registerAsset(contentHash, 0.9993, 0,
+      0, 128, 6, 0, 0.9993, 53);
     log(stepNum, `register_asset tx: ${tx}`);
     const asset = await fetchAsset(assetPDA);
     expect(asset.status).to.equal(STATUS_CANDIDATE);
@@ -277,9 +318,9 @@ describe("HXQ-Solana Lifecycle Demo", () => {
     receipt.steps.push({ step: stepNum, name: "submit_behavioral_receipt", tx, error: null, status_before: "Candidate", status_after: "Candidate", pass: true });
   });
 
-  it("Step 4: Bad promotion rejected (threshold=0.990 < 0.998 gate)", async () => {
+  it("Step 4: Bad promotion rejected (cosine_claim=0.990 < affine6 gate 0.998)", async () => {
     stepNum = 4;
-    await registerAsset(badContentHash, 0.990);
+    await registerAsset(badContentHash, 0.990, 0, 0, 128, 6, 0, 0.990, 0);
     await submitReceipt(IX_SUBMIT_FIDELITY, badAssetPDA, fidelityHash);
     await submitReceipt(IX_SUBMIT_BEHAVIORAL, badAssetPDA, behavioralHash);
     let errorMsg: string | null = null;
@@ -297,7 +338,7 @@ describe("HXQ-Solana Lifecycle Demo", () => {
     receipt.steps.push({ step: stepNum, name: "promote_asset_REJECTED", tx: null, error: errorMsg, status_before: "Candidate", status_after: "Candidate", pass: true });
   });
 
-  it("Step 5: Promote asset Candidate -> Active (threshold=0.9993 >= 0.998)", async () => {
+  it("Step 5: Promote asset Candidate -> Active (cosine_claim=0.9993 >= affine6 gate 0.998)", async () => {
     stepNum = 5;
     const tx = await noArgIx(IX_PROMOTE, assetPDA);
     log(stepNum, `promote_asset tx: ${tx}`);
@@ -330,7 +371,7 @@ describe("HXQ-Solana Lifecycle Demo", () => {
 
   it("Step 8: Quarantine a separate active asset", async () => {
     stepNum = 8;
-    await registerAsset(qContentHash, 0.9995);
+    await registerAsset(qContentHash, 0.9995, 0, 0, 128, 6, 0, 0.9995, 30);
     await submitReceipt(IX_SUBMIT_FIDELITY, qAssetPDA, fidelityHash);
     await submitReceipt(IX_SUBMIT_BEHAVIORAL, qAssetPDA, behavioralHash);
     await noArgIx(IX_PROMOTE, qAssetPDA);

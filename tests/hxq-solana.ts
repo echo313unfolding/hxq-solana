@@ -26,6 +26,19 @@ const ARTIFACT_MEDICAL = 2;
 const ARTIFACT_SCIENTIFIC = 3;
 const ARTIFACT_GENERIC = 255;
 
+// Codec IDs
+const CODEC_AFFINE6 = 0;
+const CODEC_AFFINE_G128 = 1;
+const CODEC_Q5_HIERARCHICAL = 2;
+const CODEC_AFFINE4 = 3;
+
+// Architecture types
+const ARCH_TRANSFORMER = 0;
+const ARCH_SSM = 1;
+const ARCH_HYBRID = 2;
+const ARCH_MOE = 3;
+const ARCH_VISION = 4;
+
 // Anchor instruction discriminators (first 8 bytes of sha256("global:<snake_case_name>"))
 function ixDiscriminator(name: string): Buffer {
   const hash = createHash("sha256").update(`global:${name}`).digest();
@@ -58,21 +71,47 @@ function encodeF32(val: number): Buffer {
   return buf;
 }
 
+function encodeU16LE(val: number): Buffer {
+  const buf = Buffer.alloc(2);
+  buf.writeUInt16LE(val, 0);
+  return buf;
+}
+
+function encodeI16LE(val: number): Buffer {
+  const buf = Buffer.alloc(2);
+  buf.writeInt16LE(val, 0);
+  return buf;
+}
+
 // Build register_asset instruction data
 function buildRegisterData(
   contentHash: Buffer,
   originalHash: Buffer,
   artifactType: number,
   threshold: number,
-  metadataHash: Buffer
+  metadataHash: Buffer,
+  codecId: number = 0,
+  groupSize: number = 128,
+  bitsPerWeight: number = 6,
+  architecture: number = ARCH_TRANSFORMER,
+  cosineClaim: number = 0.0,
+  pplDeltaBps: number = 0,
+  artifactCid: Buffer = Buffer.alloc(32),
 ): Buffer {
   return Buffer.concat([
     IX_REGISTER_ASSET,
-    contentHash,              // [u8; 32]
-    originalHash,             // [u8; 32]
-    Buffer.from([artifactType]), // u8
-    encodeF32(threshold),     // f32
-    metadataHash,             // [u8; 32]
+    contentHash,                    // [u8; 32]
+    originalHash,                   // [u8; 32]
+    Buffer.from([artifactType]),    // u8
+    encodeF32(threshold),           // f32
+    metadataHash,                   // [u8; 32]
+    Buffer.from([codecId]),         // u8
+    encodeU16LE(groupSize),         // u16
+    Buffer.from([bitsPerWeight]),   // u8
+    Buffer.from([architecture]),    // u8
+    encodeF32(cosineClaim),         // f32
+    encodeI16LE(pplDeltaBps),       // i16
+    artifactCid,                    // [u8; 32]
   ]);
 }
 
@@ -102,6 +141,15 @@ function deserializeAsset(data: Buffer) {
 
   const metadataHash = data.slice(offset, offset + 32);
   offset += 32;
+
+  // Codec-aware fields
+  const codecId = data[offset]; offset += 1;
+  const groupSize = data.readUInt16LE(offset); offset += 2;
+  const bitsPerWeight = data[offset]; offset += 1;
+  const architecture = data[offset]; offset += 1;
+  const cosineClaim = data.readFloatLE(offset); offset += 4;
+  const pplDeltaBps = data.readInt16LE(offset); offset += 2;
+  const artifactCid = data.slice(offset, offset + 32); offset += 32;
 
   const status = data[offset];
   offset += 1;
@@ -133,6 +181,13 @@ function deserializeAsset(data: Buffer) {
     artifactType,
     threshold,
     metadataHash,
+    codecId,
+    groupSize,
+    bitsPerWeight,
+    architecture,
+    cosineClaim,
+    pplDeltaBps,
+    artifactCid,
     status,
     fidelityReceiptHash,
     behavioralReceiptHash,
@@ -182,10 +237,19 @@ describe("hxq-solana", () => {
     hash: Buffer,
     threshold = 0.999,
     artifactType = ARTIFACT_AI_TENSOR,
-    metadata = metadataHash
+    metadata = metadataHash,
+    codecId = CODEC_AFFINE6,
+    groupSize = 128,
+    bitsPerWeight = 6,
+    architecture = ARCH_TRANSFORMER,
+    cosineClaim = 0.999,
+    pplDeltaBps = 53,
   ) {
     const [pda] = findAssetPDA(hash);
-    const data = buildRegisterData(hash, originalHash, artifactType, threshold, metadata);
+    const data = buildRegisterData(
+      hash, originalHash, artifactType, threshold, metadata,
+      codecId, groupSize, bitsPerWeight, architecture, cosineClaim, pplDeltaBps,
+    );
     const ix = new TransactionInstruction({
       keys: [
         { pubkey: pda, isSigner: false, isWritable: true },
@@ -245,7 +309,7 @@ describe("hxq-solana", () => {
   }
 
   describe("register_asset", () => {
-    it("registers a new receipt-gated asset", async () => {
+    it("registers a new codec-aware receipt-gated asset", async () => {
       const tx = await registerAsset(contentHash, 0.999);
       console.log("  register_asset tx:", tx);
 
@@ -256,6 +320,13 @@ describe("hxq-solana", () => {
       expect(asset.transferCount).to.equal(0);
       expect(asset.contentHash).to.deep.equal(contentHash);
       expect(asset.originalHash).to.deep.equal(originalHash);
+      // Codec-aware fields
+      expect(asset.codecId).to.equal(CODEC_AFFINE6);
+      expect(asset.groupSize).to.equal(128);
+      expect(asset.bitsPerWeight).to.equal(6);
+      expect(asset.architecture).to.equal(ARCH_TRANSFORMER);
+      expect(asset.cosineClaim).to.be.closeTo(0.999, 0.001);
+      expect(asset.pplDeltaBps).to.equal(53);
     });
 
     it("rejects duplicate registration (same content_hash)", async () => {
@@ -314,16 +385,45 @@ describe("hxq-solana", () => {
       }
     });
 
-    it("rejects promotion with threshold below gate", async () => {
+    it("rejects promotion with cosine_claim below per-codec gate", async () => {
       const lowHash = sha256Bytes("low-threshold-asset");
       const [lowPDA] = findAssetPDA(lowHash);
 
-      await registerAsset(lowHash, 0.990);
+      // cosine_claim=0.990 < affine6 gate of 0.998
+      await registerAsset(lowHash, 0.990, ARTIFACT_AI_TENSOR, metadataHash,
+        CODEC_AFFINE6, 128, 6, ARCH_TRANSFORMER, 0.990, 0);
       await submitReceipt(IX_SUBMIT_FIDELITY, lowPDA, fidelityHash);
       await submitReceipt(IX_SUBMIT_BEHAVIORAL, lowPDA, behavioralHash);
 
       try {
         await noArgIx(IX_PROMOTE, lowPDA);
+        expect.fail("Should have thrown");
+      } catch (e: any) {
+        expect(e.toString()).to.match(/ThresholdBelowGate|custom program error/i);
+      }
+    });
+
+    it("accepts affine4 at 0.996 (per-codec gate 0.995) but rejects at 0.994", async () => {
+      // 0.996 >= 0.995 gate for affine4 → should promote
+      const okHash = sha256Bytes("affine4-ok-tensor");
+      const [okPDA] = findAssetPDA(okHash);
+      await registerAsset(okHash, 0.996, ARTIFACT_AI_TENSOR, metadataHash,
+        CODEC_AFFINE4, 128, 4, ARCH_TRANSFORMER, 0.996, 1100);
+      await submitReceipt(IX_SUBMIT_FIDELITY, okPDA, fidelityHash);
+      await submitReceipt(IX_SUBMIT_BEHAVIORAL, okPDA, behavioralHash);
+      await noArgIx(IX_PROMOTE, okPDA);
+      const okAsset = await fetchAsset(okPDA);
+      expect(okAsset.status).to.equal(STATUS_ACTIVE);
+
+      // 0.994 < 0.995 gate for affine4 → should reject
+      const badHash = sha256Bytes("affine4-bad-tensor");
+      const [badPDA] = findAssetPDA(badHash);
+      await registerAsset(badHash, 0.994, ARTIFACT_AI_TENSOR, metadataHash,
+        CODEC_AFFINE4, 128, 4, ARCH_TRANSFORMER, 0.994, 1500);
+      await submitReceipt(IX_SUBMIT_FIDELITY, badPDA, fidelityHash);
+      await submitReceipt(IX_SUBMIT_BEHAVIORAL, badPDA, behavioralHash);
+      try {
+        await noArgIx(IX_PROMOTE, badPDA);
         expect.fail("Should have thrown");
       } catch (e: any) {
         expect(e.toString()).to.match(/ThresholdBelowGate|custom program error/i);

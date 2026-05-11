@@ -2,9 +2,9 @@
   "demo": "HXQ_SOLANA_LIFECYCLE_DEMO_V0",
   "program_id": "EnDRZxswjvqKQhnPuMY6m6AFK3sxCKRX2dokXxAYPYrP",
   "repo_path": "/home/voidstr3m33/hxq-solana",
-  "git_commit": "f421c58d13839de0cb2439a542f18111e457710d",
-  "timestamp_start": "2026-05-09T00:53:04.528Z",
-  "timestamp_end": "2026-05-09T00:53:19.374Z",
+  "git_commit": "3a2d35e1f9f8d6450d7adab0411870a403dd0043",
+  "timestamp_start": "2026-05-11T03:11:48.181Z",
+  "timestamp_end": "2026-05-11T03:11:54.308Z",
   "deterministic_content": "hxq:qwen2.5-coder-3b:layer.0.self_attn.q_proj:af6:g128:cos0.9993",
   "content_hash": "166772093357c7b2dd5c4944ce6bca3ca60a8233698825db138cf5d405aeac2f",
   "original_hash": "ea736f4b1daf857a9ec94f73efc80ac98591f602254251a2e3468553c64b524a",
@@ -14,12 +14,12 @@
   "fidelity_receipt_hash": "47d20dc8736b39e065ed6d147e364519db18206c7735cc8b3d0d4b13d8b25950",
   "behavioral_receipt_hash": "c693a5e5cc73be7d64bb47f5a8d41950c294359b0830b180e03ea8b983dfdf07",
   "risk_attestation_hash": "3aea33fdcb064481f9cb879d584a5c9621b844efc44824be4562dd5a162e9545",
-  "new_owner_pubkey": "CsnVhjWVXZF4tRSQKtEVo8t6hm2RQBW3VuQtxsiuKw3m",
+  "new_owner_pubkey": "8mWrqiU66HruhtbHTH3WH4TF9zuFwEZX2EvPjBVvf5tL",
   "steps": [
     {
       "step": 1,
       "name": "register_asset",
-      "tx": "33JJFkrsfvfKKdQzmtcECgDqtpNRyzgLfrXuPeuNkdzhBaJkrXzP4wTRU3LYKi8PeLupYsyXPinq65WLE9gziwt5",
+      "tx": "39p2sfrYh35vzGp4X363uxXmRdgJr3uiQyiK7mjBz53SEGDc7KhsTRQAR2g2a9mfECiBUP7JMtXarm5Q8PVJtjad",
       "error": null,
       "status_before": null,
       "status_after": "Candidate",
@@ -28,7 +28,7 @@
     {
       "step": 2,
       "name": "submit_fidelity_receipt",
-      "tx": "fJ5zDyRNXGkyKnMP2D5QjzL8i5q8T1sQVb49LeaNihS5BKP6tn7AnpmRd2F7uVQhGoQ61vnLzE7MiFrzy8JN7uw",
+      "tx": "5h6i7h8MwPzEf7dbJSGfSYJ2SxfgWiQW71q2TjLF5KSB5uvWAxeNtMxVs4XA1W1G3XwyZE1teHXEXuqmLwX2RgJc",
       "error": null,
       "status_before": "Candidate",
       "status_after": "Candidate",
@@ -37,7 +37,7 @@
     {
       "step": 3,
       "name": "submit_behavioral_receipt",
-      "tx": "WYwUqKxLayBrFa13ScRfqydutwRYqQVNBpiva27cjTa8QGbkAKq5AN9t9vWwvaPDHVS9x7oiXKwRD1opT3DoLYh",
+      "tx": "5z4T1wEMtoPn5Bjo5ZNtud1of7XDZKg6z3AF3Rs7R2eJd2kaC5rWzbFCfZNbU7rnMD94cjoRfsoYid3yMKxMoh1N",
       "error": null,
       "status_before": "Candidate",
       "status_after": "Candidate",
@@ -47,7 +47,7 @@
       "step": 4,
       "name": "promote_asset_REJECTED",
       "tx": null,
-      "error": "Error: Simulation failed. \nMessage: Transaction simulation failed: Error processing Instruction 0: custom program error: 0x1776. \nLogs: \n[\n  \"Program EnDRZxswjvqKQhnPuMY6m6AFK3sxCKRX2dokXxAYPYrP invoke [1]\",\n  \"Program log: Instruction: PromoteAsset\",\n  \"Program log: AnchorError thrown in programs/hxq-solana/src/lib.rs:145. Error Code: ThresholdBelowGate. Error Number: 6006. Error Message: Threshold is below the 0.998 gate.\",\n  \"Program EnDRZxswjvqKQhnPuMY6m6AFK3sxCKRX2dokXxAYPYrP consumed 3032 of 200000 compute units\",\n  \"Program EnDRZxswjvqKQhnPuMY6m6AFK3sxCKRX2dokXxAYPYrP failed: custom program error: 0x1776\"\n]. \nCatch the `SendTransactionError` and call `getLogs()` on it for full details.",
+      "error": "Error: Simulation failed. \nMessage: Transaction simulation failed: Error processing Instruction 0: custom program error: 0x1776. \nLogs: \n[\n  \"Program EnDRZxswjvqKQhnPuMY6m6AFK3sxCKRX2dokXxAYPYrP invoke [1]\",\n  \"Program log: Instruction: PromoteAsset\",\n  \"Program log: AnchorError thrown in programs/hxq-solana/src/lib.rs:169. Error Code: ThresholdBelowGate. Error Number: 6006. Error Message: Threshold is below the 0.998 gate.\",\n  \"Program EnDRZxswjvqKQhnPuMY6m6AFK3sxCKRX2dokXxAYPYrP consumed 3182 of 200000 compute units\",\n  \"Program EnDRZxswjvqKQhnPuMY6m6AFK3sxCKRX2dokXxAYPYrP failed: custom program error: 0x1776\"\n]. \nCatch the `SendTransactionError` and call `getLogs()` on it for full details.",
       "status_before": "Candidate",
       "status_after": "Candidate",
       "pass": true
@@ -55,7 +55,7 @@
     {
       "step": 5,
       "name": "promote_asset",
-      "tx": "3zBSqPbSfyMZPpazQoKBT33ebwvorPKCujCk9iCc5B5ud8GTYAALFvBgaedSakPm3xFfo6J1PFH5FFqyov63irn3",
+      "tx": "4RWVoeiipLSY8zP6HaGCK65DPAarQ8Z7o17U4D8mXh8qnNtLPSGwwsmhAKMWqCKkc4HRjTa6SGs8mJYzGdRWPuur",
       "error": null,
       "status_before": "Candidate",
       "status_after": "Active",
@@ -64,7 +64,7 @@
     {
       "step": 6,
       "name": "submit_risk_attestation",
-      "tx": "y3djLjD8989WsihKzsnMr5znajTV3tSk5mrdKSMtjU8ViTtErCb1jmYn2TCc7YE8ziup5XVSFxyE47rUSFPKbod",
+      "tx": "2Z4exFgzA9aCH4YmnrdXWpgSFcwDMQde5kR2TbXKuMTKvrbRwgWjXenpbgZ3jtKHCYPfPKr8A1KPoJCrnyUTVVHW",
       "error": null,
       "status_before": "Active",
       "status_after": "Active",
@@ -73,7 +73,7 @@
     {
       "step": 7,
       "name": "transfer_asset",
-      "tx": "5z12TLQ1i1HcC1aLhzkg3W3qPg7Sw9cuWu7gsYbvDLbMQEHVtUvUWc22GvrN2CL2sR5c7cabXUNzY7yjf85g81dK",
+      "tx": "AXvud3B6E7RRVpuSk8T4qUnXKbsN4BGYBaL4YoAnZYjUBn2XVQhNaEAimSPsKNYF4mzpiWgbg4F6WNsJCrn2psz",
       "error": null,
       "status_before": "Active",
       "status_after": "Active",
@@ -82,7 +82,7 @@
     {
       "step": 8,
       "name": "quarantine_asset",
-      "tx": "3ZetHVNdvwz8EBJFsvQdeWsGs5SY7mfvFmET6SfeN83ndbBNKegndcyiSZiuakeNUjMdJ6MKscNpBk941nNr9pbE",
+      "tx": "3qy6AHPGBcjkXvucqbv2C6HXjimDVjMuEGoYrMXJU74rkzqf9ostWfNmsUab4U2NkbvaqfS9MWy2DoBaF4KXGLPi",
       "error": null,
       "status_before": "Active",
       "status_after": "Quarantined",
@@ -92,14 +92,14 @@
       "step": 9,
       "name": "transfer_quarantined_REJECTED",
       "tx": null,
-      "error": "Error: Simulation failed. \nMessage: Transaction simulation failed: Error processing Instruction 0: custom program error: 0x1772. \nLogs: \n[\n  \"Program EnDRZxswjvqKQhnPuMY6m6AFK3sxCKRX2dokXxAYPYrP invoke [1]\",\n  \"Program log: Instruction: TransferAsset\",\n  \"Program log: AnchorError thrown in programs/hxq-solana/src/lib.rs:185. Error Code: AssetNotActive. Error Number: 6002. Error Message: Asset is not in Active status.\",\n  \"Program EnDRZxswjvqKQhnPuMY6m6AFK3sxCKRX2dokXxAYPYrP consumed 3283 of 200000 compute units\",\n  \"Program EnDRZxswjvqKQhnPuMY6m6AFK3sxCKRX2dokXxAYPYrP failed: custom program error: 0x1772\"\n]. \nCatch the `SendTransactionError` and call `getLogs()` on it for full details.",
+      "error": "Error: Simulation failed. \nMessage: Transaction simulation failed: Error processing Instruction 0: custom program error: 0x1772. \nLogs: \n[\n  \"Program EnDRZxswjvqKQhnPuMY6m6AFK3sxCKRX2dokXxAYPYrP invoke [1]\",\n  \"Program log: Instruction: TransferAsset\",\n  \"Program log: AnchorError thrown in programs/hxq-solana/src/lib.rs:217. Error Code: AssetNotActive. Error Number: 6002. Error Message: Asset is not in Active status.\",\n  \"Program EnDRZxswjvqKQhnPuMY6m6AFK3sxCKRX2dokXxAYPYrP consumed 3424 of 200000 compute units\",\n  \"Program EnDRZxswjvqKQhnPuMY6m6AFK3sxCKRX2dokXxAYPYrP failed: custom program error: 0x1772\"\n]. \nCatch the `SendTransactionError` and call `getLogs()` on it for full details.",
       "status_before": "Quarantined",
       "status_after": "Quarantined",
       "pass": true
     }
   ],
   "final_state": {
-    "owner": "CsnVhjWVXZF4tRSQKtEVo8t6hm2RQBW3VuQtxsiuKw3m",
+    "owner": "8mWrqiU66HruhtbHTH3WH4TF9zuFwEZX2EvPjBVvf5tL",
     "status": "Active",
     "artifact_type": 0,
     "threshold": 0.9993000030517578,
