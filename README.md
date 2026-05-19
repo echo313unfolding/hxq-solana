@@ -1,30 +1,133 @@
 # HXQ-Solana
 
-HXQ-Solana is a localnet-verified Solana program for **receipt-gated provenance of off-chain artifacts**.
+Quality-gated AI asset transfers on Solana. Token-2022 Transfer Hook enforces fidelity at protocol level.
 
-It stores hashes, receipts, and state transitions on-chain while keeping model/tensor artifacts off-chain.
+HXQ-Solana is a Solana program for **receipt-gated provenance of off-chain artifacts**. It stores hashes, receipts, and state transitions on-chain while keeping model/tensor artifacts off-chain. A **Token-2022 Transfer Hook** automatically blocks token transfers if the underlying asset fails quality checks.
+
+**Live on devnet.** Program ID: `EnDRZxswjvqKQhnPuMY6m6AFK3sxCKRX2dokXxAYPYrP`
+
+## What this enables
+
+- **Model trading**: Creators compress AI models with [helix-codec](https://github.com/echo313unfolding/helix-codec), register on Solana, mint gated tokens. Buyers receive tokens only if fidelity passes the codec threshold. Same codec on both sides.
+- **Supply chain**: Sensor data, quality measurements, or inspection reports compressed as embeddings. Token transfers blocked if data integrity degrades.
+- **Any domain**: Legal, medical, scientific, credential artifacts — all follow the same receipt-gated lifecycle with domain-specific thresholds.
+
+## Transfer Hook
+
+The Transfer Hook is the core primitive. It makes quality enforcement **self-enforcing at the protocol level** — not a wrapper you can skip.
+
+```
+Token-2022 transfer instruction
+    → calls Transfer Hook (CPI)
+        → reads ReceiptGatedAsset PDA
+            → checks: status == Active?
+            → checks: cosine_claim >= codec_threshold?
+                → YES → transfer succeeds
+                → NO  → transfer BLOCKED
+```
+
+Every token transfer automatically verifies the underlying asset. You cannot move a token whose compressed intelligence fails the quality gate.
+
+### How it works
+
+1. **Creator** compresses a model/tensor with helix-codec (affine-6, cos ≥ 0.998)
+2. **Creator** registers the compressed artifact on Solana (`register_asset`)
+3. **Creator** submits fidelity + behavioral receipts, promotes to Active
+4. **Creator** mints Token-2022 with TransferHook pointing to this program
+5. **Creator** calls `initialize_extra_account_meta_list` to link mint → asset PDA
+6. On transfer, **Token-2022 automatically calls the hook** — no opt-out possible
+7. **Buyer** receives the token, downloads the compressed file, decompresses with the same codec
 
 ## Current verification
 
-- 17/17 base program tests passing (includes per-codec threshold gate test)
-- 9/9 AI tensor lifecycle demo passing
-- 40/40 domain fixture demos passing (legal, medical, scientific, supply chain, credential)
-- 9/9 offline receipt verifier tests passing
-- **75/75 total tests passing**
+- 75/75 base program tests (17 base + 9 lifecycle + 40 domain + 9 verifier)
+- **8/8 Transfer Hook integration tests** (Active transfer allowed, Quarantined transfer blocked)
+- **Real SBERT model trading demo** — all-MiniLM-L6-v2 embedding layer (11.7M params), creator→buyer transfer with hook enforcement
+- **Buyer-side verification** — independent decompression + fidelity check + functional test (sentence embeddings 0.9998+)
+- Deployed to Solana devnet
 
-## Why this exists
+## Model trading demo
 
-Most blockchain examples prove that a transaction happened. HXQ-Solana proves that an off-chain artifact followed a receipt-gated lifecycle: registered, validated, promoted, transferred, quarantined, and blocked when invalid. The artifact itself never goes on-chain — only its hashes, receipts, and state transitions do.
+Full end-to-end on a real model layer (not test data):
 
-## What it proves
+```
+Real SBERT weights (44.7 MB, 30522×384)
+    → HXQ affine-6 compress (9.5 MB, cos=0.999720)
+        → Register on Solana (302-byte PDA)
+            → Submit receipts + promote to Active
+                → Mint Token-2022 with Transfer Hook
+                    → Creator sells 1 license token to Buyer
+                        → Hook verifies quality → TRADE ALLOWED
+                            → Buyer decompresses with same codec → VERIFIED
+```
 
-- Register an off-chain artifact by content hash
-- Submit fidelity and behavioral receipt hashes
-- Reject promotion if fidelity score is below threshold (0.998)
-- Promote valid assets from Candidate to Active
-- Require risk attestation before transfer
-- Transfer ownership of Active assets
-- Quarantine assets (blocks further transfers)
+### Run the demo
+
+```bash
+# 1. Start localnet with HXQ program
+solana-test-validator --reset \
+  --bpf-program EnDRZxswjvqKQhnPuMY6m6AFK3sxCKRX2dokXxAYPYrP \
+  target/deploy/hxq_solana.so --quiet &
+sleep 4 && solana airdrop 10
+
+# 2. Compress a real SBERT layer
+python3 scripts/real_layer_demo.py
+
+# 3. Run the full creator→buyer trade
+ANCHOR_PROVIDER_URL=http://localhost:8899 \
+ANCHOR_WALLET=~/.config/solana/id.json \
+  npx ts-node scripts/model_trade_demo.ts
+
+# 4. Buyer verifies and uses the model
+python3 scripts/buyer_decompress.py \
+  artifacts/sbert_real_layer/embedding.hxq \
+  artifacts/sbert_real_layer/original_embedding.npy
+```
+
+### Run Transfer Hook tests
+
+```bash
+ANCHOR_PROVIDER_URL=http://localhost:8899 \
+ANCHOR_WALLET=~/.config/solana/id.json \
+  npx ts-mocha -p ./tsconfig.json -t 120000 tests/transfer_hook.ts
+```
+
+Expected: 8/8 pass. Tests cover register → promote → mint → transfer (ALLOWED) → quarantine → transfer (BLOCKED).
+
+## Quick start
+
+Requirements: [Rust](https://rustup.rs/), [Solana CLI](https://docs.solanalabs.com/cli/install), Node.js 18+, Python 3.10+ (for compression scripts).
+
+```bash
+git clone https://github.com/echo313unfolding/hxq-solana.git
+cd hxq-solana
+npm install
+cargo build-sbf --no-default-features --features no-idl
+```
+
+### Run all tests
+
+```bash
+solana-test-validator --reset \
+  --bpf-program EnDRZxswjvqKQhnPuMY6m6AFK3sxCKRX2dokXxAYPYrP \
+  target/deploy/hxq_solana.so --quiet &
+sleep 4 && solana airdrop 10
+
+# Base tests (17)
+npx ts-mocha -p ./tsconfig.json -t 120000 tests/hxq-solana.ts
+
+# Lifecycle demo (9)
+npx ts-mocha -p ./tsconfig.json -t 120000 tests/demo_lifecycle.ts
+
+# Domain fixtures (40)
+npx ts-mocha -p ./tsconfig.json -t 120000 tests/demo_domain_fixtures.ts
+
+# Verifier tests (9)
+npx ts-mocha -p ./tsconfig.json -t 10000 tests/test_verifier.ts
+
+# Transfer Hook tests (8)
+npx ts-mocha -p ./tsconfig.json -t 120000 tests/transfer_hook.ts
+```
 
 ## State machine
 
@@ -44,96 +147,34 @@ Most blockchain examples prove that a transaction happened. HXQ-Solana proves th
                          ▼
                   ┌─────────────┐
                   │   Active    │◀── risk attestation ── transfer
-                  └──────┬──────┘
-                         │
-                    quarantine
-                         │
-                         ▼
+                  └──────┬──────┘        ▲
+                         │               │
+                    quarantine     Token-2022 Transfer Hook
+                         │         enforces quality on every
+                         ▼         token transfer automatically
                   ┌─────────────┐
-                  │ Quarantined │──▶ transfer BLOCKED
+                  │ Quarantined │──▶ token transfer BLOCKED
                   └─────────────┘
 ```
-
-## Quick start
-
-Requirements: [Rust](https://rustup.rs/), [Solana CLI](https://docs.solanalabs.com/cli/install), [Anchor](https://www.anchor-lang.com/docs/installation), Node.js 18+.
-
-```bash
-git clone https://github.com/echo313unfolding/hxq-solana.git
-cd hxq-solana
-npm install
-anchor build
-```
-
-### Run base tests (16 tests)
-
-```bash
-solana-test-validator --reset \
-  --bpf-program EnDRZxswjvqKQhnPuMY6m6AFK3sxCKRX2dokXxAYPYrP \
-  target/deploy/hxq_solana.so --quiet &
-
-npx ts-mocha -p ./tsconfig.json -t 120000 tests/hxq-solana.ts
-```
-
-### Run lifecycle demo (9 steps)
-
-```bash
-npx ts-mocha -p ./tsconfig.json -t 120000 tests/demo_lifecycle.ts
-```
-
-Expected result: 9/9 lifecycle steps pass. Receipt written to `receipts/hxq_solana_lifecycle_demo_20260508.json`.
-
-### Run domain fixture demos (40 tests across 5 domains)
-
-```bash
-npx ts-mocha -p ./tsconfig.json -t 120000 tests/demo_domain_fixtures.ts
-```
-
-Expected result: 40/40 tests pass across legal, medical, scientific, supply chain, and credential fixtures. Receipt written to `receipts/domain_fixture_demos_20260508.json`.
-
-### Verify receipts without running localnet
-
-The offline receipt verifier checks structural integrity of receipt JSON files without contacting any Solana RPC:
-
-```bash
-npx ts-node --project scripts/tsconfig.json scripts/verify_receipt.ts receipts/hxq_solana_lifecycle_demo_20260508.json
-npx ts-node --project scripts/tsconfig.json scripts/verify_receipt.ts receipts/domain_fixture_demos_20260508.json
-```
-
-Or via npm script:
-
-```bash
-npm run verify:receipt -- receipts/hxq_solana_lifecycle_demo_20260508.json
-```
-
-The verifier checks: required fields, program ID, tx signatures, 32-byte hex hashes, rejection error messages (`ThresholdBelowGate`, `AssetNotActive`), pass/fail status, and final state consistency. Exit code 0 on pass, nonzero on fail.
-
-### Run verifier tests (9 tests)
-
-```bash
-npx ts-mocha -p ./tsconfig.json -t 10000 tests/test_verifier.ts
-```
-
-Tests include validation of both receipt types plus 7 corruption scenarios (wrong program ID, bad hashes, missing steps/domains, zeroed signatures, unknown type).
 
 ## On-chain account layout
 
 ```
 ReceiptGatedAsset (302 bytes)
 ├── owner: Pubkey                      (32)
-├── content_hash: [u8; 32]            (32)  ← SHA-256 of off-chain artifact
+├── content_hash: [u8; 32]            (32)  ← SHA-256 of compressed artifact
 ├── original_hash: [u8; 32]           (32)  ← SHA-256 of source artifact
-├── artifact_type: u8                  (1)   ← 0=AI, 1=Legal, 2=Medical, 3=Scientific, 4=SupplyChain, 5=Credential, 255=Generic
+├── artifact_type: u8                  (1)   ← 0=AI, 1=Legal, 2=Medical, 3=Scientific, 4=SupplyChain, 5=Credential
 ├── threshold: f32                     (4)   ← fidelity gate for non-AI types
 ├── metadata_hash: [u8; 32]           (32)  ← SHA-256 of domain-specific metadata
 │   ── Codec-aware fields (AI tensor type) ──
 ├── codec_id: u8                       (1)   ← 0=Affine6, 1=AffineG128, 2=Q5Hierarchical, 3=Affine4
-├── group_size: u16                    (2)   ← 32, 64, 128, 256
-├── bits_per_weight: u8                (1)   ← 4, 5, 6, 8
+├── group_size: u16                    (2)
+├── bits_per_weight: u8                (1)
 ├── architecture: u8                   (1)   ← 0=Transformer, 1=SSM, 2=Hybrid, 3=MoE, 4=Vision
 ├── cosine_claim: f32                  (4)   ← claimed fidelity (independently verifiable)
-├── ppl_delta_bps: i16                 (2)   ← PPL delta in basis points (+53 = +0.53%)
-├── artifact_cid: [u8; 32]            (32)  ← content-addressable locator for off-chain artifact
+├── ppl_delta_bps: i16                 (2)   ← PPL delta in basis points
+├── artifact_cid: [u8; 32]            (32)  ← content-addressable locator
 │   ── State fields ──
 ├── status: u8                         (1)   ← 0=Candidate, 1=Active, 2=Quarantined
 ├── fidelity_receipt_hash: [u8; 32]   (32)
@@ -147,7 +188,7 @@ ReceiptGatedAsset (302 bytes)
 
 ### Per-codec threshold gate
 
-AI tensor assets use `cosine_claim` against codec-specific gates instead of the single `0.998` constant:
+AI tensor assets use `cosine_claim` against codec-specific gates:
 
 | Codec | ID | Gate | bpw |
 |-------|-----|------|-----|
@@ -156,9 +197,16 @@ AI tensor assets use `cosine_claim` against codec-specific gates instead of the 
 | Q5 Hierarchical | 2 | 0.997 | 5.5 |
 | Affine4 | 3 | 0.995 | ~4.5 |
 
-Non-AI artifact types (legal, medical, etc.) use the generic `threshold` field with the default 0.998 gate.
+## Scripts
 
-PDA seeds: `["hxq-asset", content_hash]` (content-addressed).
+| Script | Purpose |
+|--------|---------|
+| `scripts/real_layer_demo.py` | Extract + compress real SBERT embedding layer |
+| `scripts/model_trade_demo.ts` | Full creator→buyer trade with Transfer Hook |
+| `scripts/buyer_decompress.py` | Buyer-side decompression, verification, and usage |
+| `scripts/register_from_receipt.ts` | Register an artifact from `register_params.json` |
+| `scripts/e2e_register_artifact.py` | Generate test tensor + registration params |
+| `scripts/verify_claim.py` | Independent off-chain fidelity verifier |
 
 ## Program ID
 
@@ -173,37 +221,14 @@ EnDRZxswjvqKQhnPuMY6m6AFK3sxCKRX2dokXxAYPYrP
 - Not a mainnet deployment
 - Not a medical or legal compliance product
 - Not a system that stores private data on-chain
-- Not production-ready
 
 ## What this IS
 
-- A localnet proof of receipt-gated state transitions for off-chain artifacts
-- A working Anchor program with 74 passing tests across 4 test suites
-- A pattern proven to generalize across 5 domains: AI, legal, medical, scientific, supply chain, and credential
-
-The domain examples are fixtures only. They demonstrate a provenance/state-machine pattern, not legal, medical, or regulatory compliance.
-
-## The pattern
-
-```
-Private off-chain artifact
-  → content hash registered on-chain
-  → validation receipts submitted as hashes
-  → promotion gated by receipt + threshold
-  → transfer gated by risk attestation
-  → quarantine blocks further transfers
-```
-
-This pattern applies to:
-
-| Domain | Off-chain artifact | Receipts | Threshold |
-|--------|-------------------|----------|-----------|
-| AI models | Tensor/checkpoint file | Fidelity score, behavioral eval | cosine >= 0.998 |
-| Legal | Contract, evidence, filing | Attorney review, notarization | Both parties signed |
-| Medical | Patient record, lab result | Provider attestation, consent | HIPAA-compliant access |
-| Scientific compute | Dataset, model output | Benchmark validation, replication | Quality threshold |
-| Supply chain | Product passport, BOM | ISO certification, environmental audit | Certification + customs |
-| Credentials | License, certification | Board verification, continuing education | Verification + clearance |
+- A devnet-deployed proof of quality-gated AI asset transfers
+- A Token-2022 Transfer Hook that enforces fidelity at the protocol level
+- A working model trading demo on real SBERT weights (11.7M params)
+- A receipt-gated state machine proven across 6 domains with 83+ tests
+- A pattern where the same codec (helix-codec) standardizes both compression and verification
 
 ## License
 
