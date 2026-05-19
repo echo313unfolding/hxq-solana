@@ -1,0 +1,18 @@
+{
+  "model": "all-MiniLM-L6-v2",
+  "layer": "embeddings.word_embeddings.weight",
+  "shape": [
+    30522,
+    384
+  ],
+  "total_elements": 11720448,
+  "compression_ratio": 4.92,
+  "cosine_similarity": 0.99972,
+  "mse": 1.749232751535601e-06,
+  "mean_sentence_cosine": 0.999888,
+  "min_sentence_cosine": 0.999833,
+  "codec": "affine6",
+  "group_size": 128,
+  "bits_per_weight": 6,
+  "source": "huggingface:sentence-transformers/all-MiniLM-L6-v2"
+}

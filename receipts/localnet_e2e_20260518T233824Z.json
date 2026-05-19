@@ -1,0 +1,50 @@
+{
+  "receipt_id": "hxq-localnet-e2e-20260518T233824Z",
+  "description": "HXQ Solana E2E: compress tensor -> register on-chain -> verify account data",
+  "network": "localnet",
+  "program_id": "EnDRZxswjvqKQhnPuMY6m6AFK3sxCKRX2dokXxAYPYrP",
+  "signature": "3cM4VXSPKGSh3UBZrTA3ZHQGaAuWXVqwe67g13Y93LKxSHKSmSm5u8igjUSfT4QiNCnbiuLDyxbshRyvGevbMjTY",
+  "asset_pda": "EGh75kxYTumq4JFdm1CB9RfJ5DkBdw52cLx84Swh6bnK",
+  "owner": "FbFfXrGxChFQSoFZyoRBXt2AvEjt7V5sKyjhYM5D2ADD",
+  "account_size_bytes": 302,
+  "rent_lamports": 2992800,
+  "verification": {
+    "content_hash_match": true,
+    "codec_id": 0,
+    "group_size": 128,
+    "bits_per_weight": 6,
+    "cosine_claim": 0.999723,
+    "threshold": 0.998,
+    "gate_pass": true,
+    "status": "Candidate",
+    "all_fields_verified": true
+  },
+  "pipeline_steps": [
+    "1. Generated 4096 float32 test tensor (SBERT-like, seed=42)",
+    "2. Compressed with HXQ affine-6 (group_size=128) -> 3338 bytes (4.9x)",
+    "3. Computed SHA-256 hashes (content, original, metadata, artifact_cid)",
+    "4. Cosine similarity 0.999723 >= 0.998 threshold (PASS)",
+    "5. Serialized register_asset instruction (152 bytes)",
+    "6. Submitted to localnet validator with HXQ program loaded",
+    "7. Transaction confirmed, 302-byte PDA account created",
+    "8. Read back account data, decoded all fields, all match"
+  ],
+  "artifacts": {
+    "register_params": "artifacts/sbert_demo/register_params.json",
+    "compressed_tensor": "artifacts/sbert_demo/compressed.hxq",
+    "onchain_receipt": "artifacts/sbert_demo/onchain_receipt.json",
+    "metadata": "artifacts/sbert_demo/metadata.json"
+  },
+  "devnet_status": "BLOCKED - faucet rate-limited (429). Replay same tx when SOL available.",
+  "cost": {
+    "wall_time_s": 0,
+    "cpu_time_s": 0,
+    "peak_memory_mb": 11.8,
+    "python_version": "3.10.12",
+    "hostname": "Echo",
+    "timestamp_start": "2026-05-18T23:37:00",
+    "timestamp_end": "2026-05-18T23:38:24",
+    "sol_cost": 0.0,
+    "note": "Localnet - no real SOL spent"
+  }
+}

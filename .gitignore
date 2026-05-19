@@ -8,3 +8,7 @@ test-ledger
 test_artifacts/
 test-ledger/
 test_artifacts/
+
+# Large binary artifacts (keep JSON receipts, skip tensor data)
+artifacts/**/*.npy
+artifacts/**/*.hxq

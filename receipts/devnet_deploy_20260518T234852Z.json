@@ -1,0 +1,33 @@
+{
+  "receipt_id": "hxq-devnet-deploy-20260518T234852Z",
+  "description": "HXQ Solana program deployed to devnet + first asset registered",
+  "network": "devnet",
+  "program_id": "EnDRZxswjvqKQhnPuMY6m6AFK3sxCKRX2dokXxAYPYrP",
+  "deploy_signature": "3QD4Dx3xnVyv5PEz5rSjTUKDgvCdT6UZM7d3KVqEoGCTVqA8en57GPEpWRAedtt6GuVYsSTxKPFWzvZX6tiHAFbM",
+  "register_signature": "2SteXHwK8YV81YfEFqdneKTBHKpqpUPpqZifxkCTygDcYDJi2uNZuBSgHunAiYghNr4nqRUiAuWG9rZSzbYEnsWx",
+  "asset_pda": "EGh75kxYTumq4JFdm1CB9RfJ5DkBdw52cLx84Swh6bnK",
+  "owner": "FbFfXrGxChFQSoFZyoRBXt2AvEjt7V5sKyjhYM5D2ADD",
+  "account_size_bytes": 302,
+  "verification": {
+    "codec_id": 0,
+    "cosine_claim": 0.999723,
+    "threshold": 0.998,
+    "gate_pass": true,
+    "status": "Candidate",
+    "content_hash": "719962dac1d49284ab83f722d294f318cedbe9a03d2b6b0a76aa9462dbc46045"
+  },
+  "sol_spent": {
+    "deploy": 2.115,
+    "register_tx": 0.005,
+    "total_approx": 2.12
+  },
+  "cost": {
+    "wall_time_s": 0,
+    "cpu_time_s": 0,
+    "peak_memory_mb": 11.8,
+    "python_version": "3.10.12",
+    "hostname": "Echo",
+    "timestamp_start": "2026-05-18T23:40:00",
+    "timestamp_end": "2026-05-18T23:48:52"
+  }
+}

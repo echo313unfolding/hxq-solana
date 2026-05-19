@@ -6,7 +6,8 @@
     "verify:receipt": "ts-node --project scripts/tsconfig.json scripts/verify_receipt.ts"
   },
   "dependencies": {
-    "@coral-xyz/anchor": "^0.30.1"
+    "@coral-xyz/anchor": "^0.30.1",
+    "@solana/spl-token": "^0.4.14"
   },
   "devDependencies": {
     "@types/bn.js": "^5.1.0",

@@ -1,0 +1,56 @@
+{
+  "receipt_id": "hxq-transfer-hook-20260519T001135Z",
+  "description": "Token-2022 Transfer Hook: quality-gated token transfers enforced by on-chain fidelity checks",
+  "tests_passed": 8,
+  "tests_total": 8,
+  "test_results": [
+    {
+      "name": "Register HXQ asset",
+      "status": "PASS"
+    },
+    {
+      "name": "Submit receipts + promote to Active",
+      "status": "PASS"
+    },
+    {
+      "name": "Create Token-2022 mint with TransferHook",
+      "status": "PASS"
+    },
+    {
+      "name": "Initialize extra account meta list (mint\u2192asset)",
+      "status": "PASS"
+    },
+    {
+      "name": "Create token accounts and mint tokens",
+      "status": "PASS"
+    },
+    {
+      "name": "Transfer tokens (Active asset) \u2014 SUCCEEDS",
+      "status": "PASS"
+    },
+    {
+      "name": "Quarantine asset",
+      "status": "PASS"
+    },
+    {
+      "name": "Transfer tokens (Quarantined) \u2014 BLOCKED",
+      "status": "PASS"
+    }
+  ],
+  "enforcement_proven": {
+    "active_asset_transfer": "ALLOWED",
+    "quarantined_asset_transfer": "BLOCKED",
+    "mechanism": "Token-2022 TransferHook CPI reads ReceiptGatedAsset PDA, checks status + cosine_claim vs codec threshold"
+  },
+  "program_id": "EnDRZxswjvqKQhnPuMY6m6AFK3sxCKRX2dokXxAYPYrP",
+  "binary_size_bytes": 210688,
+  "cost": {
+    "wall_time_s": 3.0,
+    "cpu_time_s": 0,
+    "peak_memory_mb": 11.8,
+    "python_version": "3.10.12",
+    "hostname": "Echo",
+    "timestamp_start": "2026-05-19T00:11:35",
+    "timestamp_end": "2026-05-19T00:11:35"
+  }
+}

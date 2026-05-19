@@ -1,0 +1,13 @@
+{
+  "model": "test-sbert-like-layer",
+  "layer": "embedding.weight",
+  "original_shape": [
+    4096
+  ],
+  "compression_ratio": 4.91,
+  "cosine_similarity": 0.999723,
+  "mse": 2.201503264132043e-07,
+  "codec": "affine6",
+  "group_size": 128,
+  "bits_per_weight": 6
+}

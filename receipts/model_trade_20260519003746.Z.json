@@ -1,0 +1,24 @@
+{
+  "receipt_id": "hxq-model-trade-20260519003746.Z",
+  "description": "Real SBERT embedding layer traded creator→buyer with quality-gated transfer",
+  "network": "localnet",
+  "model": "all-MiniLM-L6-v2",
+  "layer": "embeddings.word_embeddings.weight",
+  "shape": [
+    30522,
+    384
+  ],
+  "total_elements": 11720448,
+  "cosine_claim": 0.99972,
+  "gate_pass": true,
+  "program_id": "EnDRZxswjvqKQhnPuMY6m6AFK3sxCKRX2dokXxAYPYrP",
+  "asset_pda": "3jdnMWN6iZBZz6fBu3nfbYJxhsx3gfgC8rgM3miphz84",
+  "mint": "CrqZzRC5XSiCwDNUx1gQWHKuWcqSenLN83oqMwiDJ9ok",
+  "creator": "FbFfXrGxChFQSoFZyoRBXt2AvEjt7V5sKyjhYM5D2ADD",
+  "buyer": "41rc25vg5i9kTCxuiT1yL5aXffJ16NnCWayW9cA6UwT3",
+  "transfer_signature": "3qbFmqQGwop2VbXk1exK5G8wu3k1V9H4LMcy4da2oaq9YKsN8wwsX6zuwzE4opCjtHDHYDbd4tZvd6vKDHMCJWck",
+  "creator_balance_after": 9,
+  "buyer_balance_after": 1,
+  "transfer_hook_enforced": true,
+  "timestamp": "2026-05-19T00:37:46.329Z"
+}

@@ -1,4 +1,11 @@
 use anchor_lang::prelude::*;
+use anchor_lang::system_program;
+use anchor_spl::token_interface::{Mint, TokenAccount};
+use spl_tlv_account_resolution::{
+    account::ExtraAccountMeta,
+    state::ExtraAccountMetaList,
+};
+use spl_transfer_hook_interface::instruction::TransferHookInstruction;
 
 declare_id!("EnDRZxswjvqKQhnPuMY6m6AFK3sxCKRX2dokXxAYPYrP");
 
@@ -237,6 +244,128 @@ pub mod hxq_solana {
 
         Ok(())
     }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Token-2022 Transfer Hook
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// Initialize the extra account meta list for a Token-2022 mint.
+    /// Links the mint to a ReceiptGatedAsset so the transfer hook can
+    /// enforce quality gates on every token transfer.
+    pub fn initialize_extra_account_meta_list(
+        ctx: Context<InitializeExtraAccountMetaList>,
+    ) -> Result<()> {
+        // The extra account the hook needs: the ReceiptGatedAsset PDA (read-only)
+        let account_metas = vec![
+            ExtraAccountMeta::new_with_pubkey(
+                &ctx.accounts.asset.key(),
+                false, // is_signer
+                false, // is_writable
+            )
+            .map_err(|_| ReceiptGateError::InvalidExtraAccountMeta)?,
+        ];
+
+        // Calculate space needed for the TLV list
+        let account_size = ExtraAccountMetaList::size_of(account_metas.len())
+            .map_err(|_| ReceiptGateError::InvalidExtraAccountMeta)?;
+        let lamports = Rent::get()?.minimum_balance(account_size);
+
+        let mint_key = ctx.accounts.mint.key();
+        let signer_seeds: &[&[u8]] = &[
+            b"extra-account-metas",
+            mint_key.as_ref(),
+            &[ctx.bumps.extra_account_meta_list],
+        ];
+
+        // Create the PDA account
+        system_program::create_account(
+            CpiContext::new_with_signer(
+                ctx.accounts.system_program.to_account_info(),
+                system_program::CreateAccount {
+                    from: ctx.accounts.payer.to_account_info(),
+                    to: ctx.accounts.extra_account_meta_list.to_account_info(),
+                },
+                &[signer_seeds],
+            ),
+            lamports,
+            account_size as u64,
+            ctx.program_id,
+        )?;
+
+        // Write the extra account meta list
+        ExtraAccountMetaList::init::<spl_transfer_hook_interface::instruction::ExecuteInstruction>(
+            &mut ctx.accounts.extra_account_meta_list.try_borrow_mut_data()?,
+            &account_metas,
+        )
+        .map_err(|_| ReceiptGateError::InvalidExtraAccountMeta)?;
+
+        emit!(TransferHookInitialized {
+            mint: ctx.accounts.mint.key(),
+            asset: ctx.accounts.asset.key(),
+        });
+
+        Ok(())
+    }
+
+    /// Transfer hook — called by Token-2022 on every transfer of a gated token.
+    /// Blocks the transfer if the linked asset fails quality checks.
+    ///
+    /// Gates:
+    /// 1. Asset status must be Active (not Candidate or Quarantined)
+    /// 2. AI tensors: cosine_claim must meet per-codec threshold
+    /// 3. Other types: threshold must meet default gate (0.998)
+    pub fn transfer_hook(ctx: Context<TransferHookAccounts>, _amount: u64) -> Result<()> {
+        let asset = &ctx.accounts.asset;
+
+        // Gate 1: Asset must be Active
+        require!(
+            asset.status == AssetStatus::Active as u8,
+            TransferHookError::AssetNotActive
+        );
+
+        // Gate 2: Fidelity must meet codec threshold
+        if asset.artifact_type == ArtifactType::AiTensor as u8 {
+            let required = codec_threshold(asset.codec_id);
+            require!(
+                asset.cosine_claim >= required,
+                TransferHookError::FidelityBelowGate
+            );
+        } else {
+            require!(
+                asset.threshold >= THRESHOLD_GATE,
+                TransferHookError::FidelityBelowGate
+            );
+        }
+
+        emit!(TransferHookEnforced {
+            mint: ctx.accounts.mint.key(),
+            asset: ctx.accounts.asset.key(),
+            status: asset.status,
+            cosine_claim: asset.cosine_claim,
+        });
+
+        Ok(())
+    }
+
+    /// Fallback: routes SPL Transfer Hook Execute instructions to our handler.
+    /// Token-2022 sends Execute with the SPL discriminator (not Anchor's),
+    /// so it doesn't match any Anchor instruction and lands here.
+    pub fn fallback<'info>(
+        program_id: &Pubkey,
+        accounts: &'info [AccountInfo<'info>],
+        data: &[u8],
+    ) -> Result<()> {
+        let instruction = TransferHookInstruction::unpack(data)
+            .map_err(|_| ProgramError::InvalidInstructionData)?;
+
+        match instruction {
+            TransferHookInstruction::Execute { amount } => {
+                let amount_bytes = amount.to_le_bytes();
+                __private::__global::transfer_hook(program_id, accounts, &amount_bytes)
+            }
+            _ => Err(ProgramError::InvalidInstructionData.into()),
+        }
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -368,6 +497,59 @@ pub struct TransferAsset<'info> {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// Transfer Hook account contexts
+// ═══════════════════════════════════════════════════════════════════════════════
+
+#[derive(Accounts)]
+pub struct InitializeExtraAccountMetaList<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+
+    /// CHECK: ExtraAccountMetaList PDA — validated by seeds.
+    #[account(
+        mut,
+        seeds = [b"extra-account-metas", mint.key().as_ref()],
+        bump,
+    )]
+    pub extra_account_meta_list: UncheckedAccount<'info>,
+
+    /// The Token-2022 mint with TransferHook extension pointing to this program.
+    pub mint: InterfaceAccount<'info, Mint>,
+
+    /// The ReceiptGatedAsset to link to this mint for transfer enforcement.
+    pub asset: Account<'info, ReceiptGatedAsset>,
+
+    pub system_program: Program<'info, System>,
+}
+
+/// Accounts for the transfer hook execution.
+/// Order matches Token-2022's CPI: source, mint, dest, authority, extra_metas, [extras...]
+#[derive(Accounts)]
+pub struct TransferHookAccounts<'info> {
+    /// CHECK: Source token account — validated by Token-2022.
+    pub source_token: InterfaceAccount<'info, TokenAccount>,
+
+    /// The Token-2022 mint.
+    pub mint: InterfaceAccount<'info, Mint>,
+
+    /// CHECK: Destination token account — validated by Token-2022.
+    pub destination_token: InterfaceAccount<'info, TokenAccount>,
+
+    /// CHECK: Transfer authority — validated by Token-2022.
+    pub authority: UncheckedAccount<'info>,
+
+    /// CHECK: ExtraAccountMetaList PDA — validated by seeds.
+    #[account(
+        seeds = [b"extra-account-metas", mint.key().as_ref()],
+        bump,
+    )]
+    pub extra_account_meta_list: UncheckedAccount<'info>,
+
+    /// The linked ReceiptGatedAsset — this is the extra account defined in the meta list.
+    pub asset: Account<'info, ReceiptGatedAsset>,
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // Enums
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -427,6 +609,20 @@ pub struct AssetTransferred {
     pub transfer_count: u32,
 }
 
+#[event]
+pub struct TransferHookInitialized {
+    pub mint: Pubkey,
+    pub asset: Pubkey,
+}
+
+#[event]
+pub struct TransferHookEnforced {
+    pub mint: Pubkey,
+    pub asset: Pubkey,
+    pub status: u8,
+    pub cosine_claim: f32,
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // Errors
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -447,4 +643,14 @@ pub enum ReceiptGateError {
     MissingRiskAttestation,
     #[msg("Threshold is below the 0.998 gate")]
     ThresholdBelowGate,
+    #[msg("Invalid extra account meta configuration")]
+    InvalidExtraAccountMeta,
+}
+
+#[error_code]
+pub enum TransferHookError {
+    #[msg("Transfer blocked: asset is not Active")]
+    AssetNotActive,
+    #[msg("Transfer blocked: fidelity below codec gate")]
+    FidelityBelowGate,
 }

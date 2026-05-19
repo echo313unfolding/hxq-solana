@@ -1,0 +1,30 @@
+{
+  "receipt_id": "hxq-buyer-verify-20260519T004910Z",
+  "role": "buyer",
+  "artifact": "artifacts/sbert_real_layer/embedding.hxq",
+  "content_hash": "0e8dcc8dafcc263d4240c04c64c2870572b9226c3b45f7b669e18461af215093",
+  "content_hash_verified": true,
+  "model": "all-MiniLM-L6-v2",
+  "layer": "embeddings.word_embeddings.weight",
+  "elements": 11720448,
+  "compressed_bytes": 9522874,
+  "decompressed_bytes": 46881792,
+  "codec": "affine6",
+  "group_size": 128,
+  "claimed_cosine": 0.99972,
+  "independent_cosine": 0.99972,
+  "functional_test": {
+    "mean_sentence_cosine": 0.999888,
+    "min_sentence_cosine": 0.999833
+  },
+  "verdict": "VERIFIED",
+  "cost": {
+    "wall_time_s": 10.524,
+    "cpu_time_s": 9.467,
+    "peak_memory_mb": 1290.6,
+    "python_version": "3.10.12",
+    "hostname": "Echo",
+    "timestamp_start": "2026-05-19T00:49:00",
+    "timestamp_end": "2026-05-19T00:49:10"
+  }
+}
