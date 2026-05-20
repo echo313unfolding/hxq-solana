@@ -128,6 +128,7 @@ async function main() {
 
   console.log("\n── Step 1: Register SBERT embedding layer on-chain ──");
 
+  const guardian = params.guardian ? Buffer.from(params.guardian) : Buffer.alloc(32);
   const registerData = Buffer.concat([
     ixDiscriminator("register_asset"),
     contentHash,
@@ -142,6 +143,7 @@ async function main() {
     encodeF32(params.cosine_claim),
     encodeI16LE(params.ppl_delta_bps),
     Buffer.from(params.artifact_cid),
+    guardian,
   ]);
 
   const registerIx = new TransactionInstruction({

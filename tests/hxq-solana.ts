@@ -52,6 +52,7 @@ const IX_SUBMIT_RISK = ixDiscriminator("submit_risk_attestation");
 const IX_PROMOTE = ixDiscriminator("promote_asset");
 const IX_QUARANTINE = ixDiscriminator("quarantine_asset");
 const IX_TRANSFER = ixDiscriminator("transfer_asset");
+const IX_DISPUTE = ixDiscriminator("dispute_asset");
 
 function sha256Bytes(data: string): Buffer {
   return createHash("sha256").update(data).digest();
@@ -97,6 +98,7 @@ function buildRegisterData(
   cosineClaim: number = 0.0,
   pplDeltaBps: number = 0,
   artifactCid: Buffer = Buffer.alloc(32),
+  guardian: Buffer = Buffer.alloc(32),
 ): Buffer {
   return Buffer.concat([
     IX_REGISTER_ASSET,
@@ -112,6 +114,7 @@ function buildRegisterData(
     encodeF32(cosineClaim),         // f32
     encodeI16LE(pplDeltaBps),       // i16
     artifactCid,                    // [u8; 32]
+    guardian,                       // Pubkey (32)
   ]);
 }
 
@@ -173,6 +176,10 @@ function deserializeAsset(data: Buffer) {
   offset += 8;
 
   const bump = data[offset];
+  offset += 1;
+
+  const guardian = new PublicKey(data.slice(offset, offset + 32));
+  offset += 32;
 
   return {
     owner,
@@ -196,6 +203,7 @@ function deserializeAsset(data: Buffer) {
     createdAt,
     updatedAt,
     bump,
+    guardian,
   };
 }
 
@@ -541,6 +549,143 @@ describe("hxq-solana", () => {
         expect.fail("Should have thrown");
       } catch (e: any) {
         expect(e.toString()).to.match(/AssetNotActive|custom program error/i);
+      }
+    });
+  });
+
+  describe("dispute_asset (GuardianCell)", () => {
+    const guardian = Keypair.generate();
+    const disputeReceiptHash = sha256Bytes("dispute:sentinel_v01:anomaly_detected:cos_drift=-0.003");
+    const gHash = sha256Bytes("guardian-test-tensor");
+    const [gPDA] = findAssetPDA(gHash);
+
+    // Helper: register asset with guardian
+    async function registerWithGuardian(
+      hash: Buffer,
+      guardianPubkey: PublicKey,
+      threshold = 0.999,
+      cosineClaim = 0.999,
+    ) {
+      const [pda] = findAssetPDA(hash);
+      const data = buildRegisterData(
+        hash, originalHash, ARTIFACT_AI_TENSOR, threshold, metadataHash,
+        CODEC_AFFINE6, 128, 6, ARCH_TRANSFORMER, cosineClaim, 53,
+        Buffer.alloc(32), guardianPubkey.toBuffer(),
+      );
+      const ix = new TransactionInstruction({
+        keys: [
+          { pubkey: pda, isSigner: false, isWritable: true },
+          { pubkey: owner.publicKey, isSigner: true, isWritable: true },
+          { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+        ],
+        programId: PROGRAM_ID,
+        data,
+      });
+      return await sendIx(ix);
+    }
+
+    // Helper: build dispute instruction (owner pays fee, guardian signs)
+    async function disputeAsset(pda: PublicKey, guardianKp: typeof Keypair, receipt: Buffer) {
+      const data = Buffer.concat([IX_DISPUTE, receipt]);
+      const ix = new TransactionInstruction({
+        keys: [
+          { pubkey: pda, isSigner: false, isWritable: true },
+          { pubkey: guardianKp.publicKey, isSigner: true, isWritable: false },
+        ],
+        programId: PROGRAM_ID,
+        data,
+      });
+      const tx = new Transaction().add(ix);
+      tx.feePayer = owner.publicKey;
+      return await sendAndConfirmTransaction(connection, tx, [owner, guardianKp]);
+    }
+
+    it("registers asset with guardian set", async () => {
+      await registerWithGuardian(gHash, guardian.publicKey);
+      const asset = await fetchAsset(gPDA);
+      expect(asset.guardian.toBase58()).to.equal(guardian.publicKey.toBase58());
+      expect(asset.status).to.equal(STATUS_CANDIDATE);
+    });
+
+    it("promotes guardian-backed asset to Active", async () => {
+      await submitReceipt(IX_SUBMIT_FIDELITY, gPDA, fidelityHash);
+      await submitReceipt(IX_SUBMIT_BEHAVIORAL, gPDA, behavioralHash);
+      await noArgIx(IX_PROMOTE, gPDA);
+      const asset = await fetchAsset(gPDA);
+      expect(asset.status).to.equal(STATUS_ACTIVE);
+    });
+
+    it("guardian disputes Active asset → Quarantined", async () => {
+      const tx = await disputeAsset(gPDA, guardian, disputeReceiptHash);
+      console.log("  dispute_asset tx:", tx);
+      const asset = await fetchAsset(gPDA);
+      expect(asset.status).to.equal(STATUS_QUARANTINED);
+      expect(asset.riskAttestationHash).to.deep.equal(disputeReceiptHash);
+    });
+
+    it("rejects dispute from non-guardian", async () => {
+      // Register a fresh active asset with guardian
+      const h2 = sha256Bytes("guardian-test-tensor-2");
+      const [pda2] = findAssetPDA(h2);
+      await registerWithGuardian(h2, guardian.publicKey);
+      await submitReceipt(IX_SUBMIT_FIDELITY, pda2, fidelityHash);
+      await submitReceipt(IX_SUBMIT_BEHAVIORAL, pda2, behavioralHash);
+      await noArgIx(IX_PROMOTE, pda2);
+
+      const imposter = Keypair.generate();
+      try {
+        await disputeAsset(pda2, imposter, disputeReceiptHash);
+        expect.fail("Should have thrown");
+      } catch (e: any) {
+        expect(e.toString()).to.match(/DisputeNotAuthorized|ConstraintHasOne|custom program error|Simulation failed/i);
+      }
+    });
+
+    it("rejects dispute on non-Active asset", async () => {
+      // Register asset with guardian but don't promote (stays Candidate)
+      const h3 = sha256Bytes("guardian-test-tensor-3");
+      const [pda3] = findAssetPDA(h3);
+      await registerWithGuardian(h3, guardian.publicKey);
+
+      try {
+        await disputeAsset(pda3, guardian, disputeReceiptHash);
+        expect.fail("Should have thrown");
+      } catch (e: any) {
+        expect(e.toString()).to.match(/AssetNotActive|custom program error|Simulation failed/i);
+      }
+    });
+
+    it("rejects dispute with zero receipt hash", async () => {
+      const h4 = sha256Bytes("guardian-test-tensor-4");
+      const [pda4] = findAssetPDA(h4);
+      await registerWithGuardian(h4, guardian.publicKey);
+      await submitReceipt(IX_SUBMIT_FIDELITY, pda4, fidelityHash);
+      await submitReceipt(IX_SUBMIT_BEHAVIORAL, pda4, behavioralHash);
+      await noArgIx(IX_PROMOTE, pda4);
+
+      try {
+        await disputeAsset(pda4, guardian, Buffer.alloc(32));
+        expect.fail("Should have thrown");
+      } catch (e: any) {
+        expect(e.toString()).to.match(/MissingDisputeReceipt|custom program error|Simulation failed/i);
+      }
+    });
+
+    it("rejects dispute when no guardian is set (zero pubkey)", async () => {
+      // Register asset WITHOUT guardian (default zero pubkey)
+      const h5 = sha256Bytes("no-guardian-test-tensor");
+      const [pda5] = findAssetPDA(h5);
+      await registerAsset(h5, 0.999);
+      await submitReceipt(IX_SUBMIT_FIDELITY, pda5, fidelityHash);
+      await submitReceipt(IX_SUBMIT_BEHAVIORAL, pda5, behavioralHash);
+      await noArgIx(IX_PROMOTE, pda5);
+
+      // Guardian doesn't match → has_one constraint fails
+      try {
+        await disputeAsset(pda5, guardian, disputeReceiptHash);
+        expect.fail("Should have thrown");
+      } catch (e: any) {
+        expect(e.toString()).to.match(/DisputeNotAuthorized|ConstraintHasOne|custom program error|Simulation failed/i);
       }
     });
   });

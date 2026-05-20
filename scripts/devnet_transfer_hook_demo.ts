@@ -84,6 +84,7 @@ function encodeI16LE(val: any): Buffer {
 
 function buildRegisterAssetIx(assetPDA: any, owner: any, params: any): any {
   const { TransactionInstruction } = require("@solana/web3.js");
+  const guardian = params.guardian ? Buffer.from(params.guardian) : Buffer.alloc(32);
   const data = Buffer.concat([
     ixDiscriminator("register_asset"),
     Buffer.from(params.content_hash),
@@ -98,6 +99,7 @@ function buildRegisterAssetIx(assetPDA: any, owner: any, params: any): any {
     encodeF32(params.cosine_claim),
     encodeI16LE(params.ppl_delta_bps),
     Buffer.from(params.artifact_cid),
+    guardian,
   ]);
   return new TransactionInstruction({
     keys: [

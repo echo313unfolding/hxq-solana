@@ -103,6 +103,7 @@ function buildRegisterAssetIx(
   const metadataHash = Buffer.from(params.metadata_hash);
   const artifactCid = Buffer.from(params.artifact_cid);
 
+  const guardian = params.guardian ? Buffer.from(params.guardian) : Buffer.alloc(32);
   const data = Buffer.concat([
     ixDiscriminator("register_asset"),
     contentHash,
@@ -117,6 +118,7 @@ function buildRegisterAssetIx(
     encodeF32(params.cosine_claim),
     encodeI16LE(params.ppl_delta_bps),
     artifactCid,
+    guardian,
   ]);
 
   return new TransactionInstruction({
@@ -297,7 +299,7 @@ describe("HXQ Transfer Hook", () => {
 
     const info = await connection.getAccountInfo(assetPDA);
     expect(info).to.not.be.null;
-    expect(info.data.length).to.equal(302);
+    expect(info.data.length).to.equal(334);
     expect(info.data[184]).to.equal(0); // Candidate
   });
 

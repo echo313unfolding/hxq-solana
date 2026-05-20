@@ -98,6 +98,7 @@ async function main() {
 
   // Build instruction data
   const ix_disc = ixDiscriminator("register_asset");
+  const guardian = params.guardian ? Buffer.from(params.guardian) : Buffer.alloc(32);
   const data = Buffer.concat([
     ix_disc,
     contentHash,                              // [u8; 32]
@@ -112,6 +113,7 @@ async function main() {
     encodeF32(params.cosine_claim),           // f32
     encodeI16LE(params.ppl_delta_bps),        // i16
     artifactCid,                              // [u8; 32]
+    guardian,                                 // Pubkey (32)
   ]);
 
   console.log("Instruction data:", data.length, "bytes");

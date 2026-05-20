@@ -49,6 +49,7 @@ pub mod hxq_solana {
         cosine_claim: f32,
         ppl_delta_bps: i16,
         artifact_cid: [u8; 32],
+        guardian: Pubkey,
     ) -> Result<()> {
         let asset = &mut ctx.accounts.asset;
         asset.owner = ctx.accounts.owner.key();
@@ -72,6 +73,7 @@ pub mod hxq_solana {
         asset.created_at = Clock::get()?.unix_timestamp;
         asset.updated_at = Clock::get()?.unix_timestamp;
         asset.bump = ctx.bumps.asset;
+        asset.guardian = guardian;
 
         emit!(AssetRegistered {
             asset: asset.key(),
@@ -210,6 +212,48 @@ pub mod hxq_solana {
 
         emit!(AssetQuarantined {
             asset: asset.key(),
+        });
+
+        Ok(())
+    }
+
+    /// GuardianCell dispute — independent verifier quarantines an asset.
+    ///
+    /// The guardian is a designated third party (set at registration) who can
+    /// independently verify the artifact and trigger quarantine without the
+    /// owner's permission. This makes the quality enforcement adversarial:
+    /// anyone with the original weights can challenge the claim through
+    /// the designated guardian.
+    ///
+    /// The guardian submits a dispute_receipt_hash proving their independent
+    /// verification found fidelity below the codec gate.
+    pub fn dispute_asset(
+        ctx: Context<DisputeAsset>,
+        dispute_receipt_hash: [u8; 32],
+    ) -> Result<()> {
+        let asset = &mut ctx.accounts.asset;
+
+        require!(
+            asset.guardian != Pubkey::default(),
+            ReceiptGateError::NoGuardianSet
+        );
+        require!(
+            asset.status == AssetStatus::Active as u8,
+            ReceiptGateError::AssetNotActive
+        );
+        require!(
+            dispute_receipt_hash != [0u8; 32],
+            ReceiptGateError::MissingDisputeReceipt
+        );
+
+        asset.status = AssetStatus::Quarantined as u8;
+        asset.risk_attestation_hash = dispute_receipt_hash;
+        asset.updated_at = Clock::get()?.unix_timestamp;
+
+        emit!(AssetDisputed {
+            asset: asset.key(),
+            guardian: ctx.accounts.guardian.key(),
+            dispute_receipt_hash,
         });
 
         Ok(())
@@ -416,11 +460,12 @@ pub struct ReceiptGatedAsset {
     pub created_at: i64,                    // 8
     pub updated_at: i64,                    // 8
     pub bump: u8,                           // 1
+    pub guardian: Pubkey,                   // 32 (GuardianCell — independent verifier who can dispute)
 }
 
 impl ReceiptGatedAsset {
-    // 8 (discriminator) + 32 + 32 + 32 + 1 + 4 + 32 + 1+2+1+1+4+2+32 + 1 + 32 + 32 + 32 + 4 + 8 + 8 + 1 = 302
-    pub const LEN: usize = 8 + 32 + 32 + 32 + 1 + 4 + 32 + 1 + 2 + 1 + 1 + 4 + 2 + 32 + 1 + 32 + 32 + 32 + 4 + 8 + 8 + 1;
+    // 8 (discriminator) + 32 + 32 + 32 + 1 + 4 + 32 + 1+2+1+1+4+2+32 + 1 + 32 + 32 + 32 + 4 + 8 + 8 + 1 + 32 = 334
+    pub const LEN: usize = 8 + 32 + 32 + 32 + 1 + 4 + 32 + 1 + 2 + 1 + 1 + 4 + 2 + 32 + 1 + 32 + 32 + 32 + 4 + 8 + 8 + 1 + 32;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -494,6 +539,14 @@ pub struct TransferAsset<'info> {
     pub owner: Signer<'info>,
     /// CHECK: New owner — any valid pubkey.
     pub new_owner: UncheckedAccount<'info>,
+}
+
+/// GuardianCell dispute context — guardian signs, NOT the owner.
+#[derive(Accounts)]
+pub struct DisputeAsset<'info> {
+    #[account(mut, has_one = guardian @ ReceiptGateError::DisputeNotAuthorized)]
+    pub asset: Account<'info, ReceiptGatedAsset>,
+    pub guardian: Signer<'info>,
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -602,6 +655,13 @@ pub struct AssetQuarantined {
 }
 
 #[event]
+pub struct AssetDisputed {
+    pub asset: Pubkey,
+    pub guardian: Pubkey,
+    pub dispute_receipt_hash: [u8; 32],
+}
+
+#[event]
 pub struct AssetTransferred {
     pub asset: Pubkey,
     pub from: Pubkey,
@@ -645,6 +705,12 @@ pub enum ReceiptGateError {
     ThresholdBelowGate,
     #[msg("Invalid extra account meta configuration")]
     InvalidExtraAccountMeta,
+    #[msg("No guardian set for this asset")]
+    NoGuardianSet,
+    #[msg("Dispute receipt hash must be non-zero")]
+    MissingDisputeReceipt,
+    #[msg("Only the designated guardian can dispute this asset")]
+    DisputeNotAuthorized,
 }
 
 #[error_code]

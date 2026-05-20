@@ -81,6 +81,7 @@ function buildRegisterData(
   codecId: number = 0, groupSize: number = 128, bitsPerWeight: number = 6,
   architecture: number = 0, cosineClaim: number = 0.0,
   pplDeltaBps: number = 0, artifactCid: Buffer = Buffer.alloc(32),
+  guardian: Buffer = Buffer.alloc(32),
 ): Buffer {
   return Buffer.concat([
     IX_REGISTER_ASSET,
@@ -95,6 +96,7 @@ function buildRegisterData(
     encodeF32(cosineClaim),
     encodeI16LE(pplDeltaBps),
     artifactCid,
+    guardian,
   ]);
 }
 
@@ -126,12 +128,13 @@ function deserializeAsset(data: Buffer) {
   const transferCount = data.readUInt32LE(o); o += 4;
   const createdAt = Number(data.readBigInt64LE(o)); o += 8;
   const updatedAt = Number(data.readBigInt64LE(o)); o += 8;
-  const bump = data[o];
+  const bump = data[o]; o += 1;
+  const guardian = new PublicKey(data.slice(o, o + 32)); o += 32;
   return {
     owner, contentHash, originalHash, artifactType, threshold, metadataHash,
     codecId, groupSize, bitsPerWeight, architecture, cosineClaim, pplDeltaBps, artifactCid,
     status, fidelityReceiptHash, behavioralReceiptHash, riskAttestationHash,
-    transferCount, createdAt, updatedAt, bump,
+    transferCount, createdAt, updatedAt, bump, guardian,
   };
 }
 
