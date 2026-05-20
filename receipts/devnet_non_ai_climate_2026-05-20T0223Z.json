@@ -1,0 +1,44 @@
+{
+  "receipt_id": "hxq-devnet-non-ai-climate-20260520T0223Z",
+  "title": "Non-AI Artifact Registration on Devnet (Climate Grid)",
+  "network": "devnet",
+  "domain": "scientific_compute",
+  "sub_domain": "climate_model",
+  "description": "First non-AI artifact registered on-chain. Proves domain generality: same Affine-6 codec, same program, same Transfer Hook, different artifact_type.",
+  "artifact_type": 3,
+  "artifact_type_name": "ScientificCompute",
+  "data": {
+    "description": "Global temperature anomaly grid, 1-degree resolution",
+    "shape": [360, 720],
+    "total_elements": 259200,
+    "data_range": [-8.55, 38.73],
+    "mean_celsius": 19.07,
+    "std_celsius": 9.95,
+    "original_size_bytes": 1036800,
+    "compressed_size_bytes": 210610,
+    "compression_ratio": 4.92
+  },
+  "fidelity": {
+    "cosine_similarity": 0.999998,
+    "mse": 0.00204,
+    "max_error_celsius": 0.1405,
+    "gate_threshold": 0.998,
+    "gate_pass": true
+  },
+  "on_chain": {
+    "program_id": "EnDRZxswjvqKQhnPuMY6m6AFK3sxCKRX2dokXxAYPYrP",
+    "register_signature": "4sB6DNLXb6g7hLz4PNJLYCawnkmH58KkcjKwP6qAg9vQbLmEpZtXZ18veUfhrjtTS8Aq8TTTxVbzGYLG5yk51pQQ",
+    "asset_pda": "74rThDU94YjMh5wDoXJQVhYndYm8Zv2FEsTX9Jk3Gi3L",
+    "pda_size_bytes": 374,
+    "status": "Candidate",
+    "owner": "FbFfXrGxChFQSoFZyoRBXt2AvEjt7V5sKyjhYM5D2ADD",
+    "content_hash": "8e9d3be1dd0156bc640952819d44bac424a092bc8ac2f7f8721db62a1e574e0b",
+    "codec_id": 0,
+    "codec_name": "Affine6",
+    "cosine_claim": 0.999998,
+    "lamports": 3493920
+  },
+  "codec_proof": "Same Affine-6 VQ codec (codec_id=0) used for AI tensors. No code changes needed. Domain generality is not theoretical — it is on-chain.",
+  "explorer_url": "https://explorer.solana.com/tx/4sB6DNLXb6g7hLz4PNJLYCawnkmH58KkcjKwP6qAg9vQbLmEpZtXZ18veUfhrjtTS8Aq8TTTxVbzGYLG5yk51pQQ?cluster=devnet",
+  "timestamp": "2026-05-20T02:23:16Z"
+}

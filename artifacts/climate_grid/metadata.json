@@ -1,0 +1,20 @@
+{
+  "domain": "scientific_compute",
+  "sub_domain": "climate_model",
+  "description": "Global temperature anomaly grid, 1-degree resolution",
+  "original_shape": [
+    360,
+    720
+  ],
+  "total_elements": 259200,
+  "data_range_min": -8.55018138885498,
+  "data_range_max": 38.72615051269531,
+  "compression_ratio": 4.92,
+  "cosine_similarity": 0.999998,
+  "mse": 0.0020389342680573463,
+  "max_error_celsius": 0.1405,
+  "codec": "affine6",
+  "group_size": 128,
+  "bits_per_weight": 6,
+  "timestamp": "2026-05-20T02:17:33.520333+00:00"
+}
