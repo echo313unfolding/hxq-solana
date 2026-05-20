@@ -1,0 +1,11 @@
+{
+  "receipt_id": "hxq-onchain-register-20260520025621.Z",
+  "network": "devnet",
+  "signature": "3xUGhvJqsGY1Zmgc5uNxhoeZGicySAAV1vXs7hMFunPptFKCJpCyiw8ZUaTNfF4H1Bdaf7jGnibobHRYi5dujrFd",
+  "asset_pda": "HgowqPNq8ZBFzLi555EC2dNjcL77EwcMSMYKbyNGsGhy",
+  "owner": "FbFfXrGxChFQSoFZyoRBXt2AvEjt7V5sKyjhYM5D2ADD",
+  "content_hash": "fea1f313eb7c8a30a2a50a006189a248ce2c48929de5fe6f1370ce4784418b39",
+  "cosine_claim": 0.99508,
+  "codec_id": 4,
+  "timestamp": "2026-05-20T02:56:21.634Z"
+}

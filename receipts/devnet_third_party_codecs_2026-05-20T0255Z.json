@@ -1,0 +1,45 @@
+{
+  "receipt_id": "hxq-devnet-third-party-codecs-20260520T0255Z",
+  "title": "Third-party codecs (GPTQ + AWQ) registered on devnet",
+  "description": "Proves HXQ-Solana is codec-agnostic: GPTQ and AWQ artifacts registered with same program, same Transfer Hook, different codec_id and threshold gate.",
+  "network": "devnet",
+  "program_id": "EnDRZxswjvqKQhnPuMY6m6AFK3sxCKRX2dokXxAYPYrP",
+  "upgrade_sig": "2NN7rHNR1N9NDnSLCazZhmAtrmobnyUENtcXCyvnaWPYDL32W4soBLdRZ8W5oZwp9dBY4Q213KcCfHhz543wKpFC",
+  "codecs": {
+    "gptq": {
+      "codec_id": 4,
+      "gate": 0.995,
+      "cosine_claim": 0.995080,
+      "gate_pass": true,
+      "register_sig": "3xUGhvJqsGY1Zmgc5uNxhoeZGicySAAV1vXs7hMFunPptFKCJpCyiw8ZUaTNfF4H1Bdaf7jGnibobHRYi5dujrFd",
+      "asset_pda": "HgowqPNq8ZBFzLi555EC2dNjcL77EwcMSMYKbyNGsGhy",
+      "compression_ratio": 7.1,
+      "bits_per_weight": 4,
+      "shape": [768, 768],
+      "elements": 589824
+    },
+    "awq": {
+      "codec_id": 5,
+      "gate": 0.995,
+      "cosine_claim": 0.995045,
+      "gate_pass": true,
+      "register_sig": "Jo7KZbUQxNLCdqPUVXTCoE9Agq61nfHLyicbyQEc88uvNAoQb474UAu18LUTwrTUkaFVBo79D8ceaAiA87qXQ61",
+      "asset_pda": "GvjAPaBPZ92Qg3zkuHdrvLwXmmeWSFmFP2MvV8Fh2E8w",
+      "compression_ratio": 7.1,
+      "bits_per_weight": 4,
+      "shape": [768, 768],
+      "elements": 589824
+    }
+  },
+  "test_results": "92/92 PASS (35 base+guardian+rotation+codec + 9 lifecycle + 40 domain + 8 transfer hook)",
+  "new_codec_table": {
+    "0": {"name": "Affine6", "origin": "HXQ", "gate": 0.998, "bpw": 6.25},
+    "1": {"name": "AffineG128", "origin": "HXQ", "gate": 0.998, "bpw": 8.25},
+    "2": {"name": "Q5Hierarchical", "origin": "HXQ", "gate": 0.997, "bpw": 5.5},
+    "3": {"name": "Affine4", "origin": "HXQ", "gate": 0.995, "bpw": 4.5},
+    "4": {"name": "GPTQ", "origin": "third-party", "gate": 0.995, "bpw": 4},
+    "5": {"name": "AWQ", "origin": "third-party", "gate": 0.995, "bpw": 4},
+    "6": {"name": "BitsAndBytes", "origin": "third-party", "gate": 0.993, "bpw": 4}
+  },
+  "timestamp": "2026-05-20T02:55:00Z"
+}

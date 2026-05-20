@@ -530,10 +530,13 @@ const ROTATION_DELAY_SECONDS: i64 = 7 * 24 * 60 * 60; // 604_800
 /// Different codecs have different quality ceilings — the gate reflects that.
 fn codec_threshold(codec_id: u8) -> f32 {
     match codec_id {
-        0 => 0.998,  // CodecId::Affine6 — tight gate, proven quality
-        1 => 0.998,  // CodecId::AffineG128 — same gate
-        2 => 0.997,  // CodecId::Q5Hierarchical — slightly looser
-        3 => 0.995,  // CodecId::Affine4 — known quality gap
+        0 => 0.998,  // Affine6 — HXQ tight gate, proven quality
+        1 => 0.998,  // AffineG128 — HXQ, same gate
+        2 => 0.997,  // Q5Hierarchical — HXQ, slightly looser
+        3 => 0.995,  // Affine4 — HXQ, known quality gap at ~4.5 bpw
+        4 => 0.995,  // GPTQ — int4, calibration-required, ~4 bpw
+        5 => 0.995,  // AWQ — int4, calibration-required, ~4 bpw
+        6 => 0.993,  // bitsandbytes — nf4/int8, wider quality variance
         _ => 0.998,  // Unknown codec — strict default
     }
 }
@@ -551,7 +554,7 @@ pub struct ReceiptGatedAsset {
     pub threshold: f32,                     // 4  (generic fidelity gate for non-AI types)
     pub metadata_hash: [u8; 32],            // 32 (SHA-256 of domain-specific metadata)
     // --- Codec-aware fields (populated for AiTensor, zeroed for other types) ---
-    pub codec_id: u8,                       // 1  (0=Affine6, 1=AffineG128, 2=Q5Hierarchical, 3=Affine4, 255=Unknown)
+    pub codec_id: u8,                       // 1  (0=Affine6, 1=AffineG128, 2=Q5Hierarchical, 3=Affine4, 4=GPTQ, 5=AWQ, 6=BnB, 255=Unknown)
     pub group_size: u16,                    // 2  (32, 64, 128, 256)
     pub bits_per_weight: u8,                // 1  (4, 5, 6, 8)
     pub architecture: u8,                   // 1  (0=Transformer, 1=SSM, 2=Hybrid, 3=MoE, 4=Vision)
@@ -595,13 +598,18 @@ pub enum ArtifactType {
     Generic = 255,
 }
 
-/// HXQ codec variants. Determines per-codec threshold gate for AI tensor assets.
+/// Codec variants. Determines per-codec threshold gate for AI tensor assets.
+/// Slots 0-3: HXQ native codecs. Slots 4-6: third-party codecs.
+/// 251 slots remain open for future codecs.
 #[repr(u8)]
 pub enum CodecId {
-    Affine6 = 0,         // 6.25 bpw, tight gate 0.998
-    AffineG128 = 1,      // 8.25 bpw, tight gate 0.998
-    Q5Hierarchical = 2,  // 5.5 bpw, gate 0.997
-    Affine4 = 3,         // ~4.5 bpw, gate 0.995 (known quality gap)
+    Affine6 = 0,         // HXQ 6.25 bpw, tight gate 0.998
+    AffineG128 = 1,      // HXQ 8.25 bpw, tight gate 0.998
+    Q5Hierarchical = 2,  // HXQ 5.5 bpw, gate 0.997
+    Affine4 = 3,         // HXQ ~4.5 bpw, gate 0.995
+    Gptq = 4,            // GPTQ int4, ~4 bpw, gate 0.995 (calibration-required)
+    Awq = 5,             // AWQ int4, ~4 bpw, gate 0.995 (calibration-required)
+    BitsAndBytes = 6,    // bitsandbytes nf4/int8, gate 0.993
     Unknown = 255,
 }
 

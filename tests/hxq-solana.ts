@@ -31,6 +31,9 @@ const CODEC_AFFINE6 = 0;
 const CODEC_AFFINE_G128 = 1;
 const CODEC_Q5_HIERARCHICAL = 2;
 const CODEC_AFFINE4 = 3;
+const CODEC_GPTQ = 4;
+const CODEC_AWQ = 5;
+const CODEC_BITSANDBYTES = 6;
 
 // Architecture types
 const ARCH_TRANSFORMER = 0;
@@ -439,6 +442,86 @@ describe("hxq-solana", () => {
       const [badPDA] = findAssetPDA(badHash);
       await registerAsset(badHash, 0.994, ARTIFACT_AI_TENSOR, metadataHash,
         CODEC_AFFINE4, 128, 4, ARCH_TRANSFORMER, 0.994, 1500);
+      await submitReceipt(IX_SUBMIT_FIDELITY, badPDA, fidelityHash);
+      await submitReceipt(IX_SUBMIT_BEHAVIORAL, badPDA, behavioralHash);
+      try {
+        await noArgIx(IX_PROMOTE, badPDA);
+        expect.fail("Should have thrown");
+      } catch (e: any) {
+        expect(e.toString()).to.match(/ThresholdBelowGate|custom program error/i);
+      }
+    });
+
+    it("accepts GPTQ codec at 0.996 (gate 0.995) but rejects at 0.994", async () => {
+      // 0.996 >= 0.995 gate for GPTQ → should promote
+      const okHash = sha256Bytes("gptq-ok-tensor");
+      const [okPDA] = findAssetPDA(okHash);
+      await registerAsset(okHash, 0.996, ARTIFACT_AI_TENSOR, metadataHash,
+        CODEC_GPTQ, 128, 4, ARCH_TRANSFORMER, 0.996, 820);
+      await submitReceipt(IX_SUBMIT_FIDELITY, okPDA, fidelityHash);
+      await submitReceipt(IX_SUBMIT_BEHAVIORAL, okPDA, behavioralHash);
+      await noArgIx(IX_PROMOTE, okPDA);
+      const okAsset = await fetchAsset(okPDA);
+      expect(okAsset.status).to.equal(STATUS_ACTIVE);
+      expect(okAsset.codecId).to.equal(CODEC_GPTQ);
+
+      // 0.994 < 0.995 gate for GPTQ → should reject
+      const badHash = sha256Bytes("gptq-bad-tensor");
+      const [badPDA] = findAssetPDA(badHash);
+      await registerAsset(badHash, 0.994, ARTIFACT_AI_TENSOR, metadataHash,
+        CODEC_GPTQ, 128, 4, ARCH_TRANSFORMER, 0.994, 1400);
+      await submitReceipt(IX_SUBMIT_FIDELITY, badPDA, fidelityHash);
+      await submitReceipt(IX_SUBMIT_BEHAVIORAL, badPDA, behavioralHash);
+      try {
+        await noArgIx(IX_PROMOTE, badPDA);
+        expect.fail("Should have thrown");
+      } catch (e: any) {
+        expect(e.toString()).to.match(/ThresholdBelowGate|custom program error/i);
+      }
+    });
+
+    it("accepts AWQ codec at 0.996 (gate 0.995) but rejects at 0.994", async () => {
+      const okHash = sha256Bytes("awq-ok-tensor");
+      const [okPDA] = findAssetPDA(okHash);
+      await registerAsset(okHash, 0.996, ARTIFACT_AI_TENSOR, metadataHash,
+        CODEC_AWQ, 128, 4, ARCH_TRANSFORMER, 0.996, 1110);
+      await submitReceipt(IX_SUBMIT_FIDELITY, okPDA, fidelityHash);
+      await submitReceipt(IX_SUBMIT_BEHAVIORAL, okPDA, behavioralHash);
+      await noArgIx(IX_PROMOTE, okPDA);
+      const okAsset = await fetchAsset(okPDA);
+      expect(okAsset.status).to.equal(STATUS_ACTIVE);
+      expect(okAsset.codecId).to.equal(CODEC_AWQ);
+
+      const badHash = sha256Bytes("awq-bad-tensor");
+      const [badPDA] = findAssetPDA(badHash);
+      await registerAsset(badHash, 0.994, ARTIFACT_AI_TENSOR, metadataHash,
+        CODEC_AWQ, 128, 4, ARCH_TRANSFORMER, 0.994, 1600);
+      await submitReceipt(IX_SUBMIT_FIDELITY, badPDA, fidelityHash);
+      await submitReceipt(IX_SUBMIT_BEHAVIORAL, badPDA, behavioralHash);
+      try {
+        await noArgIx(IX_PROMOTE, badPDA);
+        expect.fail("Should have thrown");
+      } catch (e: any) {
+        expect(e.toString()).to.match(/ThresholdBelowGate|custom program error/i);
+      }
+    });
+
+    it("accepts bitsandbytes codec at 0.994 (gate 0.993) but rejects at 0.992", async () => {
+      const okHash = sha256Bytes("bnb-ok-tensor");
+      const [okPDA] = findAssetPDA(okHash);
+      await registerAsset(okHash, 0.994, ARTIFACT_AI_TENSOR, metadataHash,
+        CODEC_BITSANDBYTES, 64, 4, ARCH_TRANSFORMER, 0.994, 900);
+      await submitReceipt(IX_SUBMIT_FIDELITY, okPDA, fidelityHash);
+      await submitReceipt(IX_SUBMIT_BEHAVIORAL, okPDA, behavioralHash);
+      await noArgIx(IX_PROMOTE, okPDA);
+      const okAsset = await fetchAsset(okPDA);
+      expect(okAsset.status).to.equal(STATUS_ACTIVE);
+      expect(okAsset.codecId).to.equal(CODEC_BITSANDBYTES);
+
+      const badHash = sha256Bytes("bnb-bad-tensor");
+      const [badPDA] = findAssetPDA(badHash);
+      await registerAsset(badHash, 0.992, ARTIFACT_AI_TENSOR, metadataHash,
+        CODEC_BITSANDBYTES, 64, 4, ARCH_TRANSFORMER, 0.992, 1800);
       await submitReceipt(IX_SUBMIT_FIDELITY, badPDA, fidelityHash);
       await submitReceipt(IX_SUBMIT_BEHAVIORAL, badPDA, behavioralHash);
       try {

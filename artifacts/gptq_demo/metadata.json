@@ -1,0 +1,17 @@
+{
+  "domain": "ai_tensor",
+  "codec": "gptq",
+  "codec_full": "GPTQ int4 (Frantar et al., ICLR 2023)",
+  "description": "Transformer weight matrix quantized with GPTQ",
+  "original_shape": [
+    768,
+    768
+  ],
+  "total_elements": 589824,
+  "compression_ratio": 7.11,
+  "cosine_similarity": 0.99508,
+  "mse": 8.009441080503166e-05,
+  "bits_per_weight": 4,
+  "group_size": 128,
+  "timestamp": "2026-05-20T02:54:54.093408+00:00"
+}
