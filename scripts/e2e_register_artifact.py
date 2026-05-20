@@ -176,8 +176,12 @@ def main(output_dir="artifacts"):
     metadata_json = json.dumps(metadata, sort_keys=True).encode()
     metadata_hash = sha256_bytes(metadata_json)
 
-    # Artifact CID placeholder (would be IPFS CID in production)
-    artifact_cid = sha256_bytes(b"ipfs-placeholder-" + compressed_bytes[:32])
+    # Compute real IPFS CID digest (content-addressed, deterministic)
+    try:
+        from ipfs_pin import compute_ipfs_cid
+        _, artifact_cid = compute_ipfs_cid(compressed_bytes)
+    except ImportError:
+        artifact_cid = sha256_bytes(b"ipfs-placeholder-" + compressed_bytes[:32])
 
     # Cosine claim as f32
     cosine_claim_f32 = round(cos_sim, 6)

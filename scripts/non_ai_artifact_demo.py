@@ -208,7 +208,14 @@ def main(output_dir="artifacts/climate_grid"):
     }
     metadata_json = json.dumps(metadata, sort_keys=True).encode()
     metadata_hash = sha256_bytes(metadata_json)
-    artifact_cid = sha256_bytes(b"ipfs-placeholder-" + compressed_bytes[:32])
+    # Compute real IPFS CID digest (content-addressed, deterministic)
+    try:
+        from ipfs_pin import compute_ipfs_cid
+        _, artifact_cid = compute_ipfs_cid(compressed_bytes)
+        print(f"   IPFS CID digest computed (real content-addressed hash)")
+    except ImportError:
+        artifact_cid = sha256_bytes(b"ipfs-placeholder-" + compressed_bytes[:32])
+        print(f"   IPFS CID: placeholder (run ipfs_pin.py to compute real CID)")
 
     # artifact_type=3 (ScientificCompute), codec_id=0 (Affine6)
     # For non-AI types, the on-chain program uses the threshold field (not cosine_claim)
