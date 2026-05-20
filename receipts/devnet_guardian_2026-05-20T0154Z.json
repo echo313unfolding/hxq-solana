@@ -1,0 +1,28 @@
+{
+  "demo": "HXQ_GUARDIAN_CELL_DEVNET_DEMO",
+  "program_id": "EnDRZxswjvqKQhnPuMY6m6AFK3sxCKRX2dokXxAYPYrP",
+  "rpc": "https://api.devnet.solana.com",
+  "owner": "FbFfXrGxChFQSoFZyoRBXt2AvEjt7V5sKyjhYM5D2ADD",
+  "guardian": "EgFUw56acJwbEyrTRNckuMPMj7ksRZCFpgrYdAhSzGUm",
+  "timestamp": "2026-05-20T01:54:06.941Z",
+  "steps": {
+    "register": {
+      "sig": "xYTjgmoom5jRHFQmD8ignZFdyoDMUNjHU8SHMkHHgxEjx6tji4GGcgGmn2cuwyrHRNrM48id6Zbkf1gXDR6HJDU",
+      "pda": "GpBPKz3Yq8AtT17NRqZ1k25APW2NjadAvMuWBw4Pp7mP",
+      "guardian": "EgFUw56acJwbEyrTRNckuMPMj7ksRZCFpgrYdAhSzGUm"
+    },
+    "promote": {
+      "sig": "5SbmemitUiScV8eiEwAmWFYT6PWHyZu2sSH2R9qsbP2DfTGJkae5GfLBiR8tccxwa5bzkArN6yckA8weqGCpfvvN"
+    },
+    "dispute": {
+      "sig": "2Sk1KUA9Mnx2iA9KB3vcB5Sboe5JMA7sAfxswVHRcpquPxn2hF7HzE2yjxGSJA9KtR1AggL4gWaEg5FAgXCo2jAq",
+      "dispute_receipt_hash": "35f54eeeb63b15264df74b9651e960e994a3f27d94c4304a89b99f417d2f241e"
+    },
+    "verify": {
+      "account_size": 334,
+      "status": "Quarantined",
+      "status_byte": 2
+    }
+  },
+  "cost_sol": 0.00323552
+}
