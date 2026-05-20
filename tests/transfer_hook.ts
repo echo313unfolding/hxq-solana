@@ -299,7 +299,7 @@ describe("HXQ Transfer Hook", () => {
 
     const info = await connection.getAccountInfo(assetPDA);
     expect(info).to.not.be.null;
-    expect(info.data.length).to.equal(334);
+    expect(info.data.length).to.equal(374);
     expect(info.data[184]).to.equal(0); // Candidate
   });
 

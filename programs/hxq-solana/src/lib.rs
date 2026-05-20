@@ -74,6 +74,8 @@ pub mod hxq_solana {
         asset.updated_at = Clock::get()?.unix_timestamp;
         asset.bump = ctx.bumps.asset;
         asset.guardian = guardian;
+        asset.pending_guardian = Pubkey::default();
+        asset.rotation_eligible_at = 0;
 
         emit!(AssetRegistered {
             asset: asset.key(),
@@ -259,6 +261,107 @@ pub mod hxq_solana {
         Ok(())
     }
 
+    /// Initiate guardian rotation (owner-only, timelock-gated).
+    ///
+    /// Sets a pending guardian and a future timestamp. The current guardian
+    /// retains full dispute authority until finalization. This gives the
+    /// current guardian a 7-day window to fire any pending dispute or
+    /// cancel the rotation before being replaced.
+    pub fn initiate_guardian_rotation(
+        ctx: Context<UpdateAsset>,
+        new_guardian: Pubkey,
+    ) -> Result<()> {
+        let asset = &mut ctx.accounts.asset;
+
+        require!(
+            asset.guardian != Pubkey::default(),
+            ReceiptGateError::NoGuardianSet
+        );
+        require!(
+            new_guardian != Pubkey::default(),
+            ReceiptGateError::InvalidNewGuardian
+        );
+        require!(
+            asset.pending_guardian == Pubkey::default(),
+            ReceiptGateError::RotationAlreadyPending
+        );
+
+        let now = Clock::get()?.unix_timestamp;
+        asset.pending_guardian = new_guardian;
+        asset.rotation_eligible_at = now + ROTATION_DELAY_SECONDS;
+        asset.updated_at = now;
+
+        emit!(GuardianRotationInitiated {
+            asset: asset.key(),
+            current_guardian: asset.guardian,
+            new_guardian,
+            eligible_at: asset.rotation_eligible_at,
+        });
+
+        Ok(())
+    }
+
+    /// Finalize guardian rotation (owner-only, after timelock expires).
+    ///
+    /// Replaces the current guardian with the pending guardian. Only callable
+    /// after rotation_eligible_at has passed.
+    pub fn finalize_guardian_rotation(ctx: Context<UpdateAsset>) -> Result<()> {
+        let asset = &mut ctx.accounts.asset;
+
+        require!(
+            asset.pending_guardian != Pubkey::default(),
+            ReceiptGateError::NoRotationPending
+        );
+
+        let now = Clock::get()?.unix_timestamp;
+        require!(
+            now >= asset.rotation_eligible_at,
+            ReceiptGateError::RotationNotEligible
+        );
+
+        let old_guardian = asset.guardian;
+        asset.guardian = asset.pending_guardian;
+        asset.pending_guardian = Pubkey::default();
+        asset.rotation_eligible_at = 0;
+        asset.updated_at = now;
+
+        emit!(GuardianRotated {
+            asset: asset.key(),
+            old_guardian,
+            new_guardian: asset.guardian,
+        });
+
+        Ok(())
+    }
+
+    /// Cancel a pending guardian rotation (current guardian only).
+    ///
+    /// The current guardian can block a rotation they disagree with.
+    /// This is the adversarial check: if the owner tries to swap out
+    /// a guardian who is about to dispute, the guardian cancels the
+    /// rotation and fires the dispute instead.
+    pub fn cancel_guardian_rotation(ctx: Context<DisputeAsset>) -> Result<()> {
+        let asset = &mut ctx.accounts.asset;
+
+        require!(
+            asset.pending_guardian != Pubkey::default(),
+            ReceiptGateError::NoRotationPending
+        );
+
+        let cancelled_guardian = asset.pending_guardian;
+        asset.pending_guardian = Pubkey::default();
+        asset.rotation_eligible_at = 0;
+        asset.updated_at = Clock::get()?.unix_timestamp;
+
+        emit!(GuardianRotationCancelled {
+            asset: asset.key(),
+            guardian: ctx.accounts.guardian.key(),
+            cancelled_new_guardian: cancelled_guardian,
+        });
+
+        Ok(())
+    }
+
     /// Transfer asset ownership.
     /// Only works on Active (not Candidate or Quarantined) assets.
     /// Risk attestation must exist.
@@ -419,6 +522,10 @@ pub mod hxq_solana {
 /// Default threshold gate for non-AI artifact types.
 const THRESHOLD_GATE: f32 = 0.998;
 
+/// Guardian rotation delay: 7 days in seconds.
+/// Owner initiates rotation; current guardian has this window to dispute or cancel.
+const ROTATION_DELAY_SECONDS: i64 = 7 * 24 * 60 * 60; // 604_800
+
 /// Per-codec fidelity gate. AI tensor assets use cosine_claim against these.
 /// Different codecs have different quality ceilings — the gate reflects that.
 fn codec_threshold(codec_id: u8) -> f32 {
@@ -461,11 +568,14 @@ pub struct ReceiptGatedAsset {
     pub updated_at: i64,                    // 8
     pub bump: u8,                           // 1
     pub guardian: Pubkey,                   // 32 (GuardianCell — independent verifier who can dispute)
+    // --- Guardian rotation (timelock) ---
+    pub pending_guardian: Pubkey,           // 32 (proposed replacement, zero = no rotation pending)
+    pub rotation_eligible_at: i64,         // 8  (unix timestamp when finalize_guardian_rotation becomes callable)
 }
 
 impl ReceiptGatedAsset {
-    // 8 (discriminator) + 32 + 32 + 32 + 1 + 4 + 32 + 1+2+1+1+4+2+32 + 1 + 32 + 32 + 32 + 4 + 8 + 8 + 1 + 32 = 334
-    pub const LEN: usize = 8 + 32 + 32 + 32 + 1 + 4 + 32 + 1 + 2 + 1 + 1 + 4 + 2 + 32 + 1 + 32 + 32 + 32 + 4 + 8 + 8 + 1 + 32;
+    // 334 (previous) + 32 (pending_guardian) + 8 (rotation_eligible_at) = 374
+    pub const LEN: usize = 8 + 32 + 32 + 32 + 1 + 4 + 32 + 1 + 2 + 1 + 1 + 4 + 2 + 32 + 1 + 32 + 32 + 32 + 4 + 8 + 8 + 1 + 32 + 32 + 8;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -662,6 +772,28 @@ pub struct AssetDisputed {
 }
 
 #[event]
+pub struct GuardianRotationInitiated {
+    pub asset: Pubkey,
+    pub current_guardian: Pubkey,
+    pub new_guardian: Pubkey,
+    pub eligible_at: i64,
+}
+
+#[event]
+pub struct GuardianRotated {
+    pub asset: Pubkey,
+    pub old_guardian: Pubkey,
+    pub new_guardian: Pubkey,
+}
+
+#[event]
+pub struct GuardianRotationCancelled {
+    pub asset: Pubkey,
+    pub guardian: Pubkey,
+    pub cancelled_new_guardian: Pubkey,
+}
+
+#[event]
 pub struct AssetTransferred {
     pub asset: Pubkey,
     pub from: Pubkey,
@@ -711,6 +843,14 @@ pub enum ReceiptGateError {
     MissingDisputeReceipt,
     #[msg("Only the designated guardian can dispute this asset")]
     DisputeNotAuthorized,
+    #[msg("New guardian must be a non-zero pubkey")]
+    InvalidNewGuardian,
+    #[msg("A guardian rotation is already pending")]
+    RotationAlreadyPending,
+    #[msg("No guardian rotation is pending")]
+    NoRotationPending,
+    #[msg("Rotation timelock has not elapsed yet")]
+    RotationNotEligible,
 }
 
 #[error_code]

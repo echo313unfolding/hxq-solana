@@ -131,11 +131,13 @@ function deserializeAsset(data: Buffer) {
   const updatedAt = Number(data.readBigInt64LE(o)); o += 8;
   const bump = data[o]; o += 1;
   const guardian = new PublicKey(data.slice(o, o + 32)); o += 32;
+  const pendingGuardian = new PublicKey(data.slice(o, o + 32)); o += 32;
+  const rotationEligibleAt = Number(data.readBigInt64LE(o)); o += 8;
   return {
     owner, contentHash, originalHash, artifactType, threshold, metadataHash,
     codecId, groupSize, bitsPerWeight, architecture, cosineClaim, pplDeltaBps, artifactCid,
     status, fidelityReceiptHash, behavioralReceiptHash, riskAttestationHash,
-    transferCount, createdAt, updatedAt, bump, guardian,
+    transferCount, createdAt, updatedAt, bump, guardian, pendingGuardian, rotationEligibleAt,
   };
 }
 

@@ -53,6 +53,9 @@ const IX_PROMOTE = ixDiscriminator("promote_asset");
 const IX_QUARANTINE = ixDiscriminator("quarantine_asset");
 const IX_TRANSFER = ixDiscriminator("transfer_asset");
 const IX_DISPUTE = ixDiscriminator("dispute_asset");
+const IX_INITIATE_ROTATION = ixDiscriminator("initiate_guardian_rotation");
+const IX_FINALIZE_ROTATION = ixDiscriminator("finalize_guardian_rotation");
+const IX_CANCEL_ROTATION = ixDiscriminator("cancel_guardian_rotation");
 
 function sha256Bytes(data: string): Buffer {
   return createHash("sha256").update(data).digest();
@@ -181,6 +184,12 @@ function deserializeAsset(data: Buffer) {
   const guardian = new PublicKey(data.slice(offset, offset + 32));
   offset += 32;
 
+  const pendingGuardian = new PublicKey(data.slice(offset, offset + 32));
+  offset += 32;
+
+  const rotationEligibleAt = Number(data.readBigInt64LE(offset));
+  offset += 8;
+
   return {
     owner,
     contentHash,
@@ -204,6 +213,8 @@ function deserializeAsset(data: Buffer) {
     updatedAt,
     bump,
     guardian,
+    pendingGuardian,
+    rotationEligibleAt,
   };
 }
 
@@ -687,6 +698,150 @@ describe("hxq-solana", () => {
       } catch (e: any) {
         expect(e.toString()).to.match(/DisputeNotAuthorized|ConstraintHasOne|custom program error|Simulation failed/i);
       }
+    });
+  });
+
+  describe("guardian rotation (timelock)", () => {
+    const guardian = Keypair.generate();
+    const newGuardian = Keypair.generate();
+    const rHash = sha256Bytes("rotation-test-tensor");
+    const [rPDA] = findAssetPDA(rHash);
+
+    // Helper: initiate rotation (owner signs)
+    async function initiateRotation(pda: PublicKey, newGuardianPubkey: PublicKey) {
+      const data = Buffer.concat([IX_INITIATE_ROTATION, newGuardianPubkey.toBuffer()]);
+      const ix = new TransactionInstruction({
+        keys: [
+          { pubkey: pda, isSigner: false, isWritable: true },
+          { pubkey: owner.publicKey, isSigner: true, isWritable: false },
+        ],
+        programId: PROGRAM_ID,
+        data,
+      });
+      return await sendIx(ix);
+    }
+
+    // Helper: finalize rotation (owner signs)
+    async function finalizeRotation(pda: PublicKey) {
+      const ix = new TransactionInstruction({
+        keys: [
+          { pubkey: pda, isSigner: false, isWritable: true },
+          { pubkey: owner.publicKey, isSigner: true, isWritable: false },
+        ],
+        programId: PROGRAM_ID,
+        data: IX_FINALIZE_ROTATION,
+      });
+      return await sendIx(ix);
+    }
+
+    // Helper: cancel rotation (guardian signs, owner pays)
+    async function cancelRotation(pda: PublicKey, guardianKp: typeof Keypair) {
+      const ix = new TransactionInstruction({
+        keys: [
+          { pubkey: pda, isSigner: false, isWritable: true },
+          { pubkey: guardianKp.publicKey, isSigner: true, isWritable: false },
+        ],
+        programId: PROGRAM_ID,
+        data: IX_CANCEL_ROTATION,
+      });
+      const tx = new Transaction().add(ix);
+      tx.feePayer = owner.publicKey;
+      return await sendAndConfirmTransaction(connection, tx, [owner, guardianKp]);
+    }
+
+    it("registers asset with guardian for rotation tests", async () => {
+      const data = buildRegisterData(
+        rHash, originalHash, ARTIFACT_AI_TENSOR, 0.999, metadataHash,
+        CODEC_AFFINE6, 128, 6, ARCH_TRANSFORMER, 0.999, 53,
+        Buffer.alloc(32), guardian.publicKey.toBuffer(),
+      );
+      const ix = new TransactionInstruction({
+        keys: [
+          { pubkey: rPDA, isSigner: false, isWritable: true },
+          { pubkey: owner.publicKey, isSigner: true, isWritable: true },
+          { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+        ],
+        programId: PROGRAM_ID,
+        data,
+      });
+      await sendIx(ix);
+      const asset = await fetchAsset(rPDA);
+      expect(asset.guardian.toBase58()).to.equal(guardian.publicKey.toBase58());
+      expect(asset.pendingGuardian.toBase58()).to.equal(PublicKey.default.toBase58());
+      expect(asset.rotationEligibleAt).to.equal(0);
+    });
+
+    it("owner initiates guardian rotation", async () => {
+      const tx = await initiateRotation(rPDA, newGuardian.publicKey);
+      console.log("  initiate_guardian_rotation tx:", tx);
+      const asset = await fetchAsset(rPDA);
+      expect(asset.pendingGuardian.toBase58()).to.equal(newGuardian.publicKey.toBase58());
+      expect(asset.rotationEligibleAt).to.be.greaterThan(0);
+      // Guardian should still be the original
+      expect(asset.guardian.toBase58()).to.equal(guardian.publicKey.toBase58());
+    });
+
+    it("rejects finalization before timelock expires", async () => {
+      try {
+        await finalizeRotation(rPDA);
+        expect.fail("Should have thrown");
+      } catch (e: any) {
+        expect(e.toString()).to.match(/RotationNotEligible|custom program error|Simulation failed/i);
+      }
+    });
+
+    it("rejects duplicate initiation while rotation pending", async () => {
+      const another = Keypair.generate();
+      try {
+        await initiateRotation(rPDA, another.publicKey);
+        expect.fail("Should have thrown");
+      } catch (e: any) {
+        expect(e.toString()).to.match(/RotationAlreadyPending|custom program error|Simulation failed/i);
+      }
+    });
+
+    it("current guardian cancels rotation", async () => {
+      const tx = await cancelRotation(rPDA, guardian);
+      console.log("  cancel_guardian_rotation tx:", tx);
+      const asset = await fetchAsset(rPDA);
+      expect(asset.pendingGuardian.toBase58()).to.equal(PublicKey.default.toBase58());
+      expect(asset.rotationEligibleAt).to.equal(0);
+      // Guardian unchanged
+      expect(asset.guardian.toBase58()).to.equal(guardian.publicKey.toBase58());
+    });
+
+    it("rejects cancel when no rotation pending", async () => {
+      try {
+        await cancelRotation(rPDA, guardian);
+        expect.fail("Should have thrown");
+      } catch (e: any) {
+        expect(e.toString()).to.match(/NoRotationPending|custom program error|Simulation failed/i);
+      }
+    });
+
+    it("rejects initiation with zero pubkey", async () => {
+      try {
+        await initiateRotation(rPDA, PublicKey.default);
+        expect.fail("Should have thrown");
+      } catch (e: any) {
+        expect(e.toString()).to.match(/InvalidNewGuardian|custom program error|Simulation failed/i);
+      }
+    });
+
+    it("rejects cancel from non-guardian", async () => {
+      // Initiate again so there's something to cancel
+      await initiateRotation(rPDA, newGuardian.publicKey);
+
+      const imposter = Keypair.generate();
+      try {
+        await cancelRotation(rPDA, imposter);
+        expect.fail("Should have thrown");
+      } catch (e: any) {
+        expect(e.toString()).to.match(/DisputeNotAuthorized|ConstraintHasOne|custom program error|Simulation failed/i);
+      }
+
+      // Clean up: cancel with real guardian
+      await cancelRotation(rPDA, guardian);
     });
   });
 });
