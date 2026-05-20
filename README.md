@@ -4,7 +4,7 @@ Quality-gated AI asset transfers on Solana. Token-2022 Transfer Hook enforces fi
 
 HXQ-Solana is a Solana program for **receipt-gated provenance of off-chain artifacts**. It stores hashes, receipts, and state transitions on-chain while keeping model/tensor artifacts off-chain. A **Token-2022 Transfer Hook** automatically blocks token transfers if the underlying asset fails quality checks.
 
-**Live on devnet.** Program ID: `EnDRZxswjvqKQhnPuMY6m6AFK3sxCKRX2dokXxAYPYrP`
+**Live on devnet with active-vs-quarantined transfer enforcement.** Program ID: `EnDRZxswjvqKQhnPuMY6m6AFK3sxCKRX2dokXxAYPYrP`
 
 ## What this enables
 
@@ -44,7 +44,8 @@ Every token transfer automatically verifies the underlying asset. You cannot mov
 - **8/8 Transfer Hook integration tests** (Active transfer allowed, Quarantined transfer blocked)
 - **Real SBERT model trading demo** — all-MiniLM-L6-v2 embedding layer (11.7M params), creator→buyer transfer with hook enforcement
 - **Buyer-side verification** — independent decompression + fidelity check + functional test (sentence embeddings 0.9998+)
-- Deployed to Solana devnet
+- **Devnet Transfer Hook demo** — full lifecycle on Solana devnet: register → promote → mint Token-2022 → transfer (Active = ALLOWED) → quarantine → transfer (Quarantined = BLOCKED)
+- Deployed to Solana devnet with active-vs-quarantined enforcement demonstration on real SBERT weights
 
 ## Model trading demo
 
@@ -93,6 +94,28 @@ ANCHOR_WALLET=~/.config/solana/id.json \
 ```
 
 Expected: 8/8 pass. Tests cover register → promote → mint → transfer (ALLOWED) → quarantine → transfer (BLOCKED).
+
+## Devnet demo
+
+The Transfer Hook is live on devnet. Four artifacts constitute the complete public proof:
+
+| Deliverable | Value |
+|-------------|-------|
+| Program upgrade | [`5jeHXps…`](https://solscan.io/tx/5jeHXpsdfmdQex9T63FEUCCGHmGDRymGQiM9HgtF6p8aJrBnMpJUeSFuX4JMACixogv8Hf1L5eoaFwLijr2WBWaz?cluster=devnet) |
+| Asset PDA | [`4LANmDE…`](https://solscan.io/account/4LANmDEbDtHRREp69G6PfdgQJcqYTKiTtcE9f9TPLGQX?cluster=devnet) |
+| Allowed transfer | [`3SsuPjW…`](https://solscan.io/tx/3SsuPjWbJTdRsa9dRFi87prDnRvKMNaczpSVR8i15x1v2mSsnZyGks5YTLT7gSX8JtmXXZNkhD1CHVj7kMY1j9eV?cluster=devnet) |
+| Blocked transfer | Error 6000: `Transfer blocked: asset is not Active.` |
+
+Token-2022 mint: [`Fz3aq3i…`](https://solscan.io/account/Fz3aq3iQW6VSGeVuyrPNQPg3uqH1yWrPoyJXcDMpkEWk?cluster=devnet) — Active asset transfer succeeds, quarantined asset transfer rejected by hook at protocol level.
+
+Total cost: 0.011 SOL (8 transactions).
+
+```bash
+# Replay the demo
+ANCHOR_PROVIDER_URL=https://api.devnet.solana.com \
+ANCHOR_WALLET=~/.config/solana/id.json \
+  npx ts-node scripts/devnet_transfer_hook_demo.ts
+```
 
 ## Quick start
 
@@ -206,6 +229,7 @@ AI tensor assets use `cosine_claim` against codec-specific gates:
 | `scripts/buyer_decompress.py` | Buyer-side decompression, verification, and usage |
 | `scripts/register_from_receipt.ts` | Register an artifact from `register_params.json` |
 | `scripts/e2e_register_artifact.py` | Generate test tensor + registration params |
+| `scripts/devnet_transfer_hook_demo.ts` | Full devnet Transfer Hook lifecycle (8 steps) |
 | `scripts/verify_claim.py` | Independent off-chain fidelity verifier |
 
 ## Program ID
@@ -224,11 +248,11 @@ EnDRZxswjvqKQhnPuMY6m6AFK3sxCKRX2dokXxAYPYrP
 
 ## What this IS
 
-- A devnet-deployed proof of quality-gated AI asset transfers
-- A Token-2022 Transfer Hook that enforces fidelity at the protocol level
+- A devnet-deployed proof of quality-gated asset transfers with live enforcement
+- A Token-2022 Transfer Hook that enforces fidelity at the protocol level — no opt-out
 - A working model trading demo on real SBERT weights (11.7M params)
 - A receipt-gated state machine proven across 6 domains with 83+ tests
-- A pattern where the same codec (helix-codec) standardizes both compression and verification
+- Active-vs-quarantined enforcement demonstrated on devnet with verifiable transaction signatures
 
 ## License
 

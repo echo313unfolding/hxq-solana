@@ -1,0 +1,40 @@
+{
+  "program_id": "EnDRZxswjvqKQhnPuMY6m6AFK3sxCKRX2dokXxAYPYrP",
+  "rpc": "https://api.devnet.solana.com",
+  "owner": "FbFfXrGxChFQSoFZyoRBXt2AvEjt7V5sKyjhYM5D2ADD",
+  "timestamp": "2026-05-19T23:44:48.246Z",
+  "steps": {
+    "register": {
+      "sig": "313EdSbHhXYEZ8QVqqHiqPjQRRkb9dKSCZcn98apHMpQP3WsTB6HQVzpHrLgimVjT2qcf5YMWEk4Qwcn8qhvkDX4",
+      "pda": "4LANmDEbDtHRREp69G6PfdgQJcqYTKiTtcE9f9TPLGQX"
+    },
+    "promote": {
+      "sig": "3pseUJwLLamzi8pkC6tXaUK9ZGtsaFkS7jxD5PY4FYyw2ejUTLhsYuXvRmD268AnEPUCwq1t9YGNaVwgELZELd5B"
+    },
+    "create_mint": {
+      "sig": "4kYT7TccHPyZgRDFAtNSbkJvJoSwzffkauJvbxirhL755aqeau4p5Cp18pEPCtFj1Mk8jSSAiL9MWNQHQEtXRgrk",
+      "mint": "Fz3aq3iQW6VSGeVuyrPNQPg3uqH1yWrPoyJXcDMpkEWk"
+    },
+    "init_meta_list": {
+      "sig": "4jCHAGUCaxNdQrPZv5h9aecKJFjpsSfg6551ebY5iHx9YawTut6nzqMH2m1z7oj21Q1CZHmWWtzQ8BHHMQrEs6Fd",
+      "pda": "ESiBgDyWrfBGqPyGjzkyq7z1ToTchqzcrmaJJCX8FNXo"
+    },
+    "mint_tokens": {
+      "sig": "3D78k7JRdL3JTQ3kUer5G12DUs7ePWs9d3A2LSxWeNuLhj6gB4aMPHGCiQ7S85MpT2RXrKMtksctpRVZxpHe4aBN"
+    },
+    "transfer_allowed": {
+      "sig": "3SsuPjWbJTdRsa9dRFi87prDnRvKMNaczpSVR8i15x1v2mSsnZyGks5YTLT7gSX8JtmXXZNkhD1CHVj7kMY1j9eV",
+      "status": "SUCCEEDED"
+    },
+    "quarantine": {
+      "sig": "MiBG63NYaGdFchUDtzdA8RKejvF94sWGAg885hB5KozaSoRBQn8baEQbtK8YVX9AJyykiunpQmaJyAyorxUx5xW"
+    },
+    "transfer_blocked": {
+      "status": "BLOCKED",
+      "hook_error": "Program log: AnchorError thrown in programs/hxq-solana/src/lib.rs:321. Error Code: AssetNotActive. Error Number: 6000. Error Message: Transfer blocked: asset is not Active.",
+      "error_message": "Simulation failed. \nMessage: Transaction simulation failed: Error processing Instruction 0: custom program error: 0x1770. \nLogs: \n[\n  \"Program TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb invoke [1]\",\n"
+    }
+  },
+  "cost_sol": 0.01101592,
+  "end_balance_sol": 5.86995356
+}
